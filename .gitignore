@@ -1,0 +1,24 @@
+# Environment
+.env
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+venv/
+env/
+ENV/
+
+# Database
+chroma_db/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/temp_*
+*.log
