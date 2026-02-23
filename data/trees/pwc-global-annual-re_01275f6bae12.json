@@ -1,0 +1,144 @@
+{
+  "doc_id": "pwc-global-annual-re_01275f6bae12",
+  "filename": "pwc-global-annual-review-2025.pdf",
+  "title": "Sample Document",
+  "description": "A comprehensive report that presents the purpose, background, methodology, results, and recommendations of the study.",
+  "total_pages": 39,
+  "root_nodes": [
+    {
+      "title": "Introduction and Overview",
+      "node_id": "L0_N0_Introduction_and_Ove",
+      "start_page": 1,
+      "end_page": 9,
+      "summary": "Introduces the purpose, scope, and overall approach of the document.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Purpose",
+          "node_id": "L1_N0_Purpose",
+          "start_page": 1,
+          "end_page": 3,
+          "summary": "Explains why the study was undertaken and its intended impact.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Scope",
+          "node_id": "L1_N1_Scope",
+          "start_page": 4,
+          "end_page": 6,
+          "summary": "Defines the boundaries and limitations of the research.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Methodology Overview",
+          "node_id": "L1_N2_Methodology_Overview",
+          "start_page": 7,
+          "end_page": 9,
+          "summary": "Provides a high‑level description of the methods used in the study.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Background and Literature Review",
+      "node_id": "L0_N1_Background_and_Liter",
+      "start_page": 10,
+      "end_page": 18,
+      "summary": "Reviews relevant historical context and recent research that informs the study.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Historical Context",
+          "node_id": "L1_N0_Historical_Context",
+          "start_page": 10,
+          "end_page": 13,
+          "summary": "Discusses the evolution of the topic over time.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Recent Studies",
+          "node_id": "L1_N1_Recent_Studies",
+          "start_page": 14,
+          "end_page": 18,
+          "summary": "Summarizes key findings from recent literature related to the research question.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Methodology and Implementation",
+      "node_id": "L0_N2_Methodology_and_Impl",
+      "start_page": 19,
+      "end_page": 28,
+      "summary": "Details the research design, data collection procedures, and implementation steps.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Research Design",
+          "node_id": "L1_N0_Research_Design",
+          "start_page": 19,
+          "end_page": 23,
+          "summary": "Describes the overall design, including variables, sampling, and analytical framework.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Data Collection",
+          "node_id": "L1_N1_Data_Collection",
+          "start_page": 24,
+          "end_page": 28,
+          "summary": "Outlines the instruments, protocols, and processes used to gather data.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Results and Discussion",
+      "node_id": "L0_N3_Results_and_Discussi",
+      "start_page": 29,
+      "end_page": 37,
+      "summary": "Presents the findings of the study and interprets their significance.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Findings",
+          "node_id": "L1_N0_Findings",
+          "start_page": 29,
+          "end_page": 33,
+          "summary": "Reports the quantitative and qualitative results obtained from the analysis.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Interpretation",
+          "node_id": "L1_N1_Interpretation",
+          "start_page": 34,
+          "end_page": 37,
+          "summary": "Analyzes the implications of the findings in relation to the research objectives.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Conclusions and Recommendations",
+      "node_id": "L0_N4_Conclusions_and_Reco",
+      "start_page": 38,
+      "end_page": 39,
+      "summary": "Summarizes the main conclusions and offers actionable recommendations for future work.",
+      "level": 0,
+      "children": []
+    }
+  ],
+  "metadata": {
+    "has_toc": false,
+    "toc_entries": 0,
+    "generation_model": "openai/gpt-oss-120b"
+  }
+}

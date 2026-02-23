@@ -1,94 +1,143 @@
 """
-Planner Node - Query Decomposition for Complex Queries
+Planner Node — Break Complex Queries into Sub-Steps (PageIndex)
 
-Breaks down complex queries into executable sub-tasks.
+For complex/multi-hop queries, creates an execution plan
+before tree search. Updated for PageIndex pipeline.
 """
 
-from typing import List
+from __future__ import annotations
+
+from langchain_core.runnables import RunnableConfig
+
 import json
+import time
+from typing import Any
 
-from ..schemas.state import AgentState, PlanStep
-from ...llm.groq_client import GroqClient
-from ...observability.tracing import tracer
+from ..schemas.state import PageIndexQueryState
+from ..schemas.injected import get_deps
+from ...observability.logging import get_logger
 
+logger = get_logger(__name__)
 
-PLANNER_PROMPT = """You are a query planner for a finance RAG system.
+_PLANNER_PROMPT = """You are a financial analysis expert. Break this complex question into simpler sub-questions that can each be answered by searching a document tree index.
 
-Given a complex query, break it down into simple, executable steps.
+Original Question: {question}
 
-Query: {question}
+Create a plan with 2-4 steps. Each step should be a focused sub-question.
 
-Create a plan with 2-5 steps. Each step should be one of:
-- RETRIEVE: Search for specific information
-- ANALYZE: Analyze retrieved information
-- CALCULATE: Perform a calculation
-- SYNTHESIZE: Combine information from previous steps
-- VERIFY: Verify a claim or statement
+Output as JSON:
+{{
+    "steps": [
+        {{
+            "step_id": 1,
+            "action": "retrieve",
+            "query": "Sub-question to search for",
+            "rationale": "Why this step is needed"
+        }}
+    ]
+}}
 
-Output as JSON array:
-[
-  {{"step_id": 1, "action": "RETRIEVE", "query": "...", "rationale": "..."}},
-  ...
-]
+Only output JSON."""
 
-Only output the JSON array, nothing else."""
-
-
-def create_plan(state: AgentState) -> dict:
+async def create_plan(
+    state: PageIndexQueryState, config: RunnableConfig
+) -> dict[str, Any]:
     """
-    Node: Create execution plan for complex queries.
-    
-    Input: question
-    Output: plan, current_step
+    📝 PLANNER — Break complex queries into sub-steps.
+
+    For complex/multi-hop queries, creates an execution plan
+    that the tree search can follow step by step.
+
+    Args:
+        state: Current state with question field.
+        config: RunnableConfig with injected PageIndexDeps.
+
+    Returns:
+        Dict with plan (list of steps) and current_step.
     """
-    with tracer.start_as_current_span("planner_node") as span:
-        question = state["question"]
-        
-        llm = GroqClient()
-        response = llm.generate(
-            PLANNER_PROMPT.format(question=question),
-            model="llama-3.3-70b-versatile",  # Use powerful model for planning
-            max_tokens=500
+    start_time = time.time()
+    deps = get_deps(config)
+    question = state["question"]
+
+    node_exec_id = await deps.telemetry.log_node_start(
+        query_id=state.get("query_id", ""),
+        node_name="planner",
+        input_summary={"question_length": len(question)},
+    )
+
+    try:
+        llm_start = time.time()
+        response = await deps.llm.agenerate(
+            _PLANNER_PROMPT.format(question=question),
+            model="llama-3.3-70b-versatile",
+            max_tokens=512,
+            temperature=0.1,
         )
-        
+        llm_latency = (time.time() - llm_start) * 1000
+
+        await deps.telemetry.log_llm_call(
+            query_id=state.get("query_id", ""),
+            node_name="planner",
+            model="llama-3.3-70b-versatile",
+            latency_ms=round(llm_latency, 1),
+            temperature=0.1,
+        )
+
         plan = _parse_plan(response)
-        span.set_attribute("plan_steps", len(plan))
-        
+
+        duration_ms = (time.time() - start_time) * 1000
+
+        await deps.telemetry.log_node_end(
+            node_execution_id=node_exec_id,
+            query_id=state.get("query_id", ""),
+            node_name="planner",
+            output_summary={"steps": len(plan)},
+            duration_ms=duration_ms,
+        )
+
+        logger.info("planner.created", steps=len(plan))
+
         return {
-            "plan": [step.model_dump() for step in plan],
+            "plan": plan,
             "current_step": 0,
-            "sub_results": []
         }
 
+    except Exception as exc:
+        duration_ms = (time.time() - start_time) * 1000
+        logger.error("planner.failed", error=str(exc))
+        await deps.telemetry.log_node_end(
+            node_execution_id=node_exec_id,
+            query_id=state.get("query_id", ""),
+            node_name="planner",
+            duration_ms=duration_ms,
+            error=str(exc),
+        )
+        # Fallback: single-step plan with original question
+        return {
+            "plan": [{"step_id": 1, "action": "retrieve", "query": question, "rationale": "Fallback"}],
+            "current_step": 0,
+        }
 
-def _parse_plan(response: str) -> List[PlanStep]:
-    """Parse JSON plan from LLM response"""
+def _parse_plan(response: str) -> list[dict]:
+    """Parse plan from LLM response."""
     try:
-        # Try to extract JSON from response
-        response = response.strip()
-        if response.startswith("```"):
-            response = response.split("```")[1]
-            if response.startswith("json"):
-                response = response[4:]
-        
-        steps_data = json.loads(response)
-        
-        return [
-            PlanStep(
-                step_id=step.get("step_id", i + 1),
-                action=step.get("action", "retrieve").lower(),
-                query=step.get("query", ""),
-                rationale=step.get("rationale", "")
-            )
-            for i, step in enumerate(steps_data)
-        ]
-    except (json.JSONDecodeError, KeyError):
-        # Fallback: single retrieve step
-        return [
-            PlanStep(
-                step_id=1,
-                action="retrieve",
-                query=response[:200],
-                rationale="Fallback single-step plan"
-            )
-        ]
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            lines = cleaned.split("\n")
+            lines = [l for l in lines if not l.strip().startswith("```")]
+            cleaned = "\n".join(lines)
+
+        start_idx = cleaned.find("{")
+        end_idx = cleaned.rfind("}") + 1
+        if start_idx >= 0 and end_idx > start_idx:
+            cleaned = cleaned[start_idx:end_idx]
+
+        data = json.loads(cleaned)
+        steps = data.get("steps", [])
+
+        if isinstance(steps, list) and len(steps) > 0:
+            return steps
+    except (json.JSONDecodeError, KeyError, ValueError):
+        pass
+
+    return []
