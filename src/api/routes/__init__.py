@@ -1,4 +1,4 @@
 """API Routes"""
-from . import query, ingest, health, admin
+from . import health, pageindex, conversations
 
-__all__ = ["query", "ingest", "health", "admin"]
+__all__ = ["health", "pageindex", "conversations"]

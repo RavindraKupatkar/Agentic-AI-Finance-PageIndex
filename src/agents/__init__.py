@@ -1,14 +1,23 @@
 """
-LangGraph Multi-Agent System
+LangGraph Multi-Agent System — PageIndex Finance RAG
 
 Production-grade agentic RAG with:
-- Query routing
-- Multi-hop reasoning
+- PageIndex tree-based retrieval (replaces vector search)
+- Multi-hop reasoning via tree navigation
 - Self-correction via critic agent
+- Async telemetry via SQLite
 """
 
-from .orchestrator import AgentOrchestrator
-from .graphs.query_graph import get_query_graph
-from .schemas.state import AgentState
+from .schemas.state import (
+    PageIndexQueryState,
+    PageIndexIngestionState,
+    create_initial_query_state,
+    create_initial_ingestion_state,
+)
 
-__all__ = ["AgentOrchestrator", "get_query_graph", "AgentState"]
+__all__ = [
+    "PageIndexQueryState",
+    "PageIndexIngestionState",
+    "create_initial_query_state",
+    "create_initial_ingestion_state",
+]
