@@ -90,6 +90,18 @@ class Settings(BaseSettings):
         default=100 * 1024 * 1024,  # 100 MB
         description="Maximum PDF file size in bytes.",
     )
+    max_pdf_size_mb: int = Field(
+        default=100,
+        description="Maximum PDF file size in megabytes (display only).",
+    )
+    max_pdf_pages: int = Field(
+        default=2000,
+        description="Maximum number of pages allowed in a PDF.",
+    )
+    pdfs_dir: str = Field(
+        default="data/pdfs",
+        description="Directory for storing uploaded PDFs.",
+    )
     max_search_retries: int = Field(
         default=2,
         ge=0,
