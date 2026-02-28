@@ -1,0 +1,100 @@
+{
+  "doc_id": "pwc-global-annual-re_01275f6bae12",
+  "filename": "pwc-global-annual-review-2025.pdf",
+  "title": "Document Analysis",
+  "description": "Analysis of a 39-page document with no table of contents.",
+  "total_pages": 39,
+  "root_nodes": [
+    {
+      "title": "Introduction",
+      "node_id": "L0_N0_Introduction",
+      "start_page": 1,
+      "end_page": 3,
+      "summary": "Introduction to the document, covering the first three pages.",
+      "level": 0,
+      "children": []
+    },
+    {
+      "title": "Main Content",
+      "node_id": "L0_N1_Main_Content",
+      "start_page": 4,
+      "end_page": 19,
+      "summary": "The main content of the document, spanning 16 pages.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Section 1",
+          "node_id": "L1_N0_Section_1",
+          "start_page": 4,
+          "end_page": 10,
+          "summary": "First section of the main content, covering 7 pages.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Section 2",
+          "node_id": "L1_N1_Section_2",
+          "start_page": 11,
+          "end_page": 19,
+          "summary": "Second section of the main content, covering 9 pages.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Conclusion",
+      "node_id": "L0_N2_Conclusion",
+      "start_page": 20,
+      "end_page": 21,
+      "summary": "Conclusion of the document, covering 2 pages.",
+      "level": 0,
+      "children": []
+    },
+    {
+      "title": "Final Pages",
+      "node_id": "L0_N3_Final_Pages",
+      "start_page": 22,
+      "end_page": 38,
+      "summary": "Final pages of the document, covering 17 pages.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Section 3",
+          "node_id": "L1_N0_Section_3",
+          "start_page": 22,
+          "end_page": 28,
+          "summary": "Third section of the final pages, covering 7 pages.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Section 4",
+          "node_id": "L1_N1_Section_4",
+          "start_page": 29,
+          "end_page": 38,
+          "summary": "Fourth section of the final pages, covering 10 pages.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "References",
+      "node_id": "L0_N4_References",
+      "start_page": 39,
+      "end_page": 39,
+      "summary": "References for the document, covering 1 page.",
+      "level": 0,
+      "children": []
+    }
+  ],
+  "metadata": {
+    "has_toc": false,
+    "toc_entries": 0,
+    "generation_model": "llama-3.1-8b-instant",
+    "text_extraction_chars": 0,
+    "pages_with_text": 0,
+    "is_image_only": true
+  }
+}

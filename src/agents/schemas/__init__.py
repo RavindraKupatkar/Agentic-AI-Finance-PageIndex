@@ -1,20 +1,32 @@
-"""Agent Schemas"""
+"""Agent Schemas — PageIndex State and Dependency Injection"""
 from .state import (
-    AgentState,
-    RetrievedDocument,
+    PageIndexQueryState,
+    PageIndexIngestionState,
     PlanStep,
     ExecutionPlan,
     CriticEvaluation,
     GeneratedResponse,
-    create_initial_state
+    PageSource,
+    create_initial_query_state,
+    create_initial_ingestion_state,
+)
+from .injected import (
+    PageIndexDeps,
+    create_deps,
+    get_deps,
 )
 
 __all__ = [
-    "AgentState",
-    "RetrievedDocument",
+    "PageIndexQueryState",
+    "PageIndexIngestionState",
     "PlanStep",
     "ExecutionPlan",
     "CriticEvaluation",
     "GeneratedResponse",
-    "create_initial_state"
+    "PageSource",
+    "create_initial_query_state",
+    "create_initial_ingestion_state",
+    "PageIndexDeps",
+    "create_deps",
+    "get_deps",
 ]

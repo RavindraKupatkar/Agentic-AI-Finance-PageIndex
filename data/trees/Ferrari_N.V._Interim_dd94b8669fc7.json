@@ -1,0 +1,238 @@
+{
+  "doc_id": "Ferrari_N.V._Interim_dd94b8669fc7",
+  "filename": "Ferrari N.V. Interim Report - September 30, 2025.pdf",
+  "title": "Ferrari N.V. Interim Report",
+  "description": "Interim financial report for Ferrari N.V. covering the three and nine months ended September 30, 2025.",
+  "total_pages": 65,
+  "root_nodes": [
+    {
+      "title": "CONTENTS",
+      "node_id": "L0_N0_CONTENTS",
+      "start_page": 1,
+      "end_page": 2,
+      "summary": "Table of contents for the report.",
+      "level": 0,
+      "children": [
+        {
+          "title": "BOARD OF DIRECTORS",
+          "node_id": "L1_N0_BOARD_OF_DIRECTORS",
+          "start_page": 1,
+          "end_page": 2,
+          "summary": "List of directors and their roles.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "INDEPENDENT REGISTERED PUBLIC ACCOUNTING FIRM",
+          "node_id": "L1_N1_INDEPENDENT_REGISTER",
+          "start_page": 1,
+          "end_page": 2,
+          "summary": "Information about the accounting firm.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "CERTAIN DEFINED TERMS",
+          "node_id": "L1_N2_CERTAIN_DEFINED_TERM",
+          "start_page": 1,
+          "end_page": 2,
+          "summary": "Definitions of key terms used in the report.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "INTRODUCTION",
+      "node_id": "L0_N1_INTRODUCTION",
+      "start_page": 3,
+      "end_page": 4,
+      "summary": "Introduction to the report and its contents.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Forward-Looking Statements",
+          "node_id": "L1_N0_Forward-Looking_Stat",
+          "start_page": 4,
+          "end_page": 5,
+          "summary": "Information about forward-looking statements in the report.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "MANAGEMENT'S DISCUSSION AND ANALYSIS",
+      "node_id": "L0_N2_MANAGEMENT'S_DISCUSS",
+      "start_page": 6,
+      "end_page": 30,
+      "summary": "Management's discussion and analysis of the company's financial condition and results of operations.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Highlights",
+          "node_id": "L1_N0_Highlights",
+          "start_page": 6,
+          "end_page": 8,
+          "summary": "Highlights of the company's performance.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Results of Operations",
+          "node_id": "L1_N1_Results_of_Operation",
+          "start_page": 9,
+          "end_page": 13,
+          "summary": "Results of operations for the three and nine months ended September 30, 2025.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Liquidity and Capital Resources",
+          "node_id": "L1_N2_Liquidity_and_Capita",
+          "start_page": 17,
+          "end_page": 23,
+          "summary": "Information about the company's liquidity and capital resources.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Non-GAAP Financial Measures",
+          "node_id": "L1_N3_Non-GAAP_Financial_M",
+          "start_page": 23,
+          "end_page": 28,
+          "summary": "Information about non-GAAP financial measures used in the report.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Risk Factors",
+          "node_id": "L1_N4_Risk_Factors",
+          "start_page": 28,
+          "end_page": 29,
+          "summary": "Information about risk factors affecting the company.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Outlook",
+          "node_id": "L1_N5_Outlook",
+          "start_page": 29,
+          "end_page": 30,
+          "summary": "The company's outlook and future prospects.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "UNAUDITED INTERIM CONSOLIDATED FINANCIAL STATEMENTS",
+      "node_id": "L0_N3_UNAUDITED_INTERIM_CO",
+      "start_page": 32,
+      "end_page": 65,
+      "summary": "Unaudited interim consolidated financial statements for the three and nine months ended September 30, 2025.",
+      "level": 0,
+      "children": [
+        {
+          "title": "INTERIM CONSOLIDATED INCOME STATEMENT",
+          "node_id": "L1_N0_INTERIM_CONSOLIDATED",
+          "start_page": 33,
+          "end_page": 34,
+          "summary": "Interim consolidated income statement for the three and nine months ended September 30, 2025.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "INTERIM CONSOLIDATED STATEMENT OF COMPREHENSIVE INCOME",
+          "node_id": "L1_N1_INTERIM_CONSOLIDATED",
+          "start_page": 34,
+          "end_page": 35,
+          "summary": "Interim consolidated statement of comprehensive income for the three and nine months ended September 30, 2025.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "NOTES TO THE INTERIM CONDENSED CONSOLIDATED FINANCIAL STATEMENTS",
+          "node_id": "L1_N2_NOTES_TO_THE_INTERIM",
+          "start_page": 38,
+          "end_page": 65,
+          "summary": "Notes to the interim condensed consolidated financial statements.",
+          "level": 1,
+          "children": [
+            {
+              "title": "1. BACKGROUND AND GENERAL INFORMATION",
+              "node_id": "L2_N0_1._BACKGROUND_AND_GE",
+              "start_page": 38,
+              "end_page": 40,
+              "summary": "Background and general information about the company.",
+              "level": 2,
+              "children": []
+            },
+            {
+              "title": "2. AUTHORIZATION OF SEMI-ANNUAL CONSOLIDATED FINANCIAL STATEMENTS AND COMPLIANCE WITH INTERNATIONAL FINANCIAL REPORTING STANDARDS",
+              "node_id": "L2_N1_2._AUTHORIZATION_OF_",
+              "start_page": 38,
+              "end_page": 40,
+              "summary": "Authorization of semi-annual consolidated financial statements and compliance with international financial reporting standards.",
+              "level": 2,
+              "children": []
+            },
+            {
+              "title": "3. BASIS OF PREPARATION FOR SEMI-ANNUAL CONSOLIDATE D FINANCIAL STATEMENTS",
+              "node_id": "L2_N2_3._BASIS_OF_PREPARAT",
+              "start_page": 38,
+              "end_page": 40,
+              "summary": "Basis of preparation for semi-annual consolidated financial statements.",
+              "level": 2,
+              "children": []
+            },
+            {
+              "title": "4. FINANCIAL RISK FACTORS",
+              "node_id": "L2_N3_4._FINANCIAL_RISK_FA",
+              "start_page": 40,
+              "end_page": 40,
+              "summary": "Financial risk factors affecting the company.",
+              "level": 2,
+              "children": []
+            },
+            {
+              "title": "5. OTHER INFORMATION",
+              "node_id": "L2_N4_5._OTHER_INFORMATION",
+              "start_page": 40,
+              "end_page": 40,
+              "summary": "Other information about the company.",
+              "level": 2,
+              "children": []
+            },
+            {
+              "title": "COMPOSITION AND PRINCIPAL CHANGES",
+              "node_id": "L2_N5_COMPOSITION_AND_PRIN",
+              "start_page": 40,
+              "end_page": 40,
+              "summary": "Composition and principal changes of the company.",
+              "level": 2,
+              "children": []
+            },
+            {
+              "title": "6. Net revenues",
+              "node_id": "L2_N6_6._Net_revenues",
+              "start_page": 40,
+              "end_page": 40,
+              "summary": "Net revenues of the company.",
+              "level": 2,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "has_toc": true,
+    "toc_entries": 54,
+    "generation_model": "llama-3.1-8b-instant",
+    "text_extraction_chars": 174740,
+    "pages_with_text": 65,
+    "is_image_only": false
+  }
+}

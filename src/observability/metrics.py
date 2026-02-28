@@ -92,7 +92,7 @@ def setup_metrics():
     SYSTEM_INFO.info({
         'version': '1.0.0',
         'environment': 'production',
-        'vector_store': 'qdrant',
+        'vector_store': 'pageindex',
         'llm_provider': 'groq'
     })
 

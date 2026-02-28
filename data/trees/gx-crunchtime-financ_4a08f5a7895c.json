@@ -1,0 +1,81 @@
+{
+  "doc_id": "gx-crunchtime-financ_4a08f5a7895c",
+  "filename": "gx-crunchtime-finance-2025-revisited.pdf",
+  "title": "Finance 2025 Revisited",
+  "description": "A report on the future of finance, covering trends, challenges, and opportunities.",
+  "total_pages": 26,
+  "root_nodes": [
+    {
+      "title": "Introduction",
+      "node_id": "L0_N0_Introduction",
+      "start_page": 1,
+      "end_page": 3,
+      "summary": "Overview of the report and its key themes.",
+      "level": 0,
+      "children": []
+    },
+    {
+      "title": "Finance in a Changing World",
+      "node_id": "L0_N1_Finance_in_a_Changin",
+      "start_page": 4,
+      "end_page": 13,
+      "summary": "Discussion of the impact of COVID-19 on finance and the need for innovation.",
+      "level": 0,
+      "children": [
+        {
+          "title": "The Future of Self-Service",
+          "node_id": "L1_N0_The_Future_of_Self-S",
+          "start_page": 4,
+          "end_page": 6,
+          "summary": "Exploration of the role of self-service in finance and its potential benefits and challenges.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "New Service Delivery Models",
+          "node_id": "L1_N1_New_Service_Delivery",
+          "start_page": 7,
+          "end_page": 10,
+          "summary": "Discussion of emerging service delivery models and their potential impact on finance.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Operating Models",
+          "node_id": "L1_N2_Operating_Models",
+          "start_page": 11,
+          "end_page": 13,
+          "summary": "Exploration of new operating models for finance and their potential benefits.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Conclusion and Call to Action",
+      "node_id": "L0_N2_Conclusion_and_Call_",
+      "start_page": 14,
+      "end_page": 15,
+      "summary": "Summary of key takeaways and call to action for finance leaders.",
+      "level": 0,
+      "children": []
+    },
+    {
+      "title": "About Deloitte",
+      "node_id": "L0_N3_About_Deloitte",
+      "start_page": 16,
+      "end_page": 26,
+      "summary": "Information about Deloitte and its services.",
+      "level": 0,
+      "children": []
+    }
+  ],
+  "metadata": {
+    "has_toc": false,
+    "toc_entries": 0,
+    "generation_model": "llama-3.1-8b-instant",
+    "text_extraction_chars": 31260,
+    "pages_with_text": 26,
+    "is_image_only": false
+  }
+}
