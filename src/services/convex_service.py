@@ -26,7 +26,7 @@ class ConvexService:
 
     def save_tree(self, document_id: str, structure: dict) -> str:
         """Saves a generated PageIndex JSON tree to Convex."""
-        from ...observability.logging import get_logger
+        from src.observability.logging import get_logger
         logger = get_logger(__name__)
         logger.info(
             "convex_service.saving_tree",
@@ -43,7 +43,7 @@ class ConvexService:
 
     def get_tree(self, document_id: str) -> dict:
         """Retrieves a PageIndex JSON tree from Convex."""
-        from ...observability.logging import get_logger
+        from src.observability.logging import get_logger
         logger = get_logger(__name__)
         logger.info("convex_service.fetching_tree", document_id=document_id)
         result = self.client.query("trees:getTree", {
