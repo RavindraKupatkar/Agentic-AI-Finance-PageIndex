@@ -26,19 +26,45 @@ class ConvexService:
 
     def save_tree(self, document_id: str, structure: dict) -> str:
         """Saves a generated PageIndex JSON tree to Convex."""
-        return self.client.mutation("trees:saveTree", {
+        from ...observability.logging import get_logger
+        logger = get_logger(__name__)
+        logger.info(
+            "convex_service.saving_tree",
+            document_id=document_id,
+            structure_keys=list(structure.keys()) if isinstance(structure, dict) else "not_dict",
+            structure_size=len(str(structure)),
+        )
+        result = self.client.mutation("trees:saveTree", {
             "documentId": document_id,
             "structure": structure
         })
+        logger.info("convex_service.tree_saved", document_id=document_id, result=result)
+        return result
 
     def get_tree(self, document_id: str) -> dict:
         """Retrieves a PageIndex JSON tree from Convex."""
+        from ...observability.logging import get_logger
+        logger = get_logger(__name__)
+        logger.info("convex_service.fetching_tree", document_id=document_id)
         result = self.client.query("trees:getTree", {
             "documentId": document_id
         })
+        logger.info(
+            "convex_service.tree_query_result",
+            document_id=document_id,
+            result_is_none=result is None,
+            result_keys=list(result.keys()) if result else None,
+        )
         if not result:
             raise ValueError(f"Tree structure for document {document_id} not found in Convex.")
-        return result.get("structure")
+        structure = result.get("structure")
+        logger.info(
+            "convex_service.tree_structure_extracted",
+            document_id=document_id,
+            structure_is_none=structure is None,
+            structure_type=type(structure).__name__ if structure else None,
+        )
+        return structure
 
     # ─────────────────────────────────────────────
     # Documents & Storage
