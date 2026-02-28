@@ -9,9 +9,16 @@ from src.core.config import settings
 
 class ConvexService:
     def __init__(self):
-        # We do not use set_auth for the backend because these mutations 
-        # are open to internal admin functions or authenticated via passed args
-        self.client = ConvexClient(settings.convex_url)
+        # Lazy client — connect on first use, not at import time.
+        # This prevents blocking the container startup on an external service.
+        self._client = None
+
+    @property
+    def client(self) -> ConvexClient:
+        """Lazily initialise the ConvexClient on first access."""
+        if self._client is None:
+            self._client = ConvexClient(settings.convex_url)
+        return self._client
 
     # ─────────────────────────────────────────────
     # Trees

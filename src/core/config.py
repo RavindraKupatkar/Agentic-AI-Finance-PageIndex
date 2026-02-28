@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     # API
     # ─────────────────────────────────────────────
     api_host: str = "0.0.0.0"
-    api_port: int = Field(default=8000, alias="PORT")
+    api_port: int = Field(default=8080, alias="PORT")
     allowed_origins_str: str = Field(
         default="http://localhost:3000",
         alias="ALLOWED_ORIGINS",
