@@ -113,15 +113,17 @@ class TelemetryService:
         completion_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
         duration_ms: Optional[float] = None,
+        latency_ms: Optional[float] = None,
         error: Optional[str] = None,
         temperature: float = 0.0,
     ):
         try:
+            effective_duration = duration_ms or latency_ms
             convex_service.log_event(
                 event_type="llm_call",
                 query_id=query_id or "unknown",
                 node_name=node_name or "unknown",
-                duration_ms=duration_ms,
+                duration_ms=effective_duration,
                 details={
                     "model": model,
                     "tokens": total_tokens,
