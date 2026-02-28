@@ -22,8 +22,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth, UserButton } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1`
+  : "http://localhost:8000/api/v1";
 
 /* ─── 3D Magnetic Card ─── */
 function MagneticCard({
@@ -74,6 +79,21 @@ interface DocumentInfo {
 }
 
 export default function DocumentsPage() {
+    const { getToken } = useAuth();
+
+    /* ─── Fetch Wrapper ─── */
+    const authFetch = useCallback(
+        async (url: string, options: RequestInit = {}) => {
+            const token = await getToken();
+            const headers = new Headers(options.headers);
+            if (token) {
+                headers.set("Authorization", `Bearer ${token}`);
+            }
+            return fetch(url, { ...options, headers });
+        },
+        [getToken]
+    );
+
     const [searchQuery, setSearchQuery] = useState("");
     const [documents, setDocuments] = useState<DocumentInfo[]>([]);
     const [loading, setLoading] = useState(true);
@@ -86,7 +106,7 @@ export default function DocumentsPage() {
     /* ─── Fetch real documents from backend ─── */
     const fetchDocuments = useCallback(async () => {
         try {
-            const res = await fetch(`${API_BASE}/pageindex/documents`);
+            const res = await authFetch(`${API_BASE}/pageindex/documents`);
             if (res.ok) {
                 const data: DocumentInfo[] = await res.json();
                 setDocuments(data);
@@ -155,7 +175,7 @@ export default function DocumentsPage() {
                 const formData = new FormData();
                 formData.append("file", file);
 
-                const res = await fetch(`${API_BASE}/pageindex/ingest`, {
+                const res = await authFetch(`${API_BASE}/pageindex/ingest`, {
                     method: "POST",
                     body: formData,
                 });
@@ -230,6 +250,13 @@ export default function DocumentsPage() {
                     >
                         <Upload size={14} /> Upload PDF
                     </button>
+                    <UserButton
+                        appearance={{
+                            elements: {
+                                avatarBox: "w-8 h-8 border border-white/20",
+                            },
+                        }}
+                    />
                 </div>
             </motion.nav>
 

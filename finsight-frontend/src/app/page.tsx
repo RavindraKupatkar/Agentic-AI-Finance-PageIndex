@@ -5,6 +5,7 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Link from "next/link";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import {
   ArrowRight,
   Search,
@@ -352,14 +353,32 @@ export default function LandingPage() {
           </a>
         </div>
 
-        <MagneticHover depth={30}>
-          <Link
-            href="/chat"
-            className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full text-sm font-bold uppercase tracking-wider hover:bg-accent hover:text-white transition-all duration-300"
-          >
-            Launch System <ArrowRight size={16} />
-          </Link>
-        </MagneticHover>
+        <div className="flex items-center gap-3">
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="px-5 py-2.5 rounded-full border border-white/20 text-sm font-medium text-white/70 hover:text-white hover:border-white/40 transition-all">
+                Sign In
+              </button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "w-9 h-9 border border-white/20",
+                },
+              }}
+            />
+          </SignedIn>
+          <MagneticHover depth={30}>
+            <Link
+              href="/chat"
+              className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full text-sm font-bold uppercase tracking-wider hover:bg-accent hover:text-white transition-all duration-300"
+            >
+              Launch System <ArrowRight size={16} />
+            </Link>
+          </MagneticHover>
+        </div>
       </motion.nav>
 
       {/* ═══ HERO ═══ */}

@@ -64,9 +64,23 @@ async def select_documents(
     )
 
     try:
-        # Load all document metadata from TreeStore (validate=True
-        # automatically purges entries whose JSON files are missing)
-        all_docs = deps.tree_store.list_documents(validate=True)
+        from ...services.convex_service import convex_service
+        
+        # Load document metadata from Convex
+        clerk_id = state.get("user_id") or "frontend_user"
+        all_docs_raw = convex_service.list_documents(clerk_id)
+        
+        all_docs = []
+        for d in all_docs_raw:
+            if d.get("status") == "ready":
+                all_docs.append({
+                    "doc_id": d["_id"],
+                    "filename": d.get("filename", ""),
+                    "title": d.get("title", ""),
+                    "description": "",
+                    "total_pages": d.get("totalPages", 0),
+                    "storage_id": d.get("storageId"),
+                })
 
         # ── Conversation-scoped filtering ──────────────────────────
         # If the query came from a conversation with attached documents,
@@ -74,7 +88,7 @@ async def select_documents(
         scoped_doc_ids = state.get("scoped_doc_ids")
         if scoped_doc_ids:
             scoped_set = set(scoped_doc_ids)
-            all_docs = [d for d in all_docs if d.doc_id in scoped_set]
+            all_docs = [d for d in all_docs if d["doc_id"] in scoped_set]
             logger.info(
                 "doc_selector.scoped_filter_applied",
                 scoped_doc_ids=scoped_doc_ids,
@@ -103,16 +117,7 @@ async def select_documents(
                 "error": error_msg,
             }
 
-        available_docs = [
-            {
-                "doc_id": doc.doc_id,
-                "filename": doc.filename,
-                "title": doc.title,
-                "description": "",
-                "total_pages": doc.total_pages,
-            }
-            for doc in all_docs
-        ]
+        available_docs = all_docs
 
         # If only 1 document, select it directly (no LLM needed)
         if len(available_docs) == 1:
@@ -152,24 +157,19 @@ async def select_documents(
 
             selected_ids = _parse_selected_ids(response, available_docs)
 
-        # Load tree structures for selected documents
-        # Gracefully skip documents whose trees can't be loaded
+        # Load tree structures from Convex
         tree_structures: dict = {}
         failed_ids: list[str] = []
         for doc_id in selected_ids:
             try:
-                tree_data = deps.tree_store.load_tree(doc_id)
+                tree_data = convex_service.get_tree(doc_id)
                 if tree_data:
-                    tree_structures[doc_id] = (
-                        tree_data.to_dict()
-                        if hasattr(tree_data, "to_dict")
-                        else tree_data
-                    )
+                    tree_structures[doc_id] = tree_data
                 else:
                     logger.warning(
                         "doc_selector.tree_load_skipped",
                         doc_id=doc_id,
-                        reason="load_tree returned None (stale entry cleaned)",
+                        reason="get_tree returned None",
                     )
                     failed_ids.append(doc_id)
             except Exception as load_exc:

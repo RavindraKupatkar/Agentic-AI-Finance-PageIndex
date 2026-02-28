@@ -12,7 +12,6 @@ Usage in nodes:
         deps = get_deps(config)
         result = await deps.llm.agenerate("prompt")
         await deps.telemetry.log_node_start(...)
-        tree = deps.tree_store.load_tree("doc_id")
 
 Usage in orchestrator (injecting deps):
     deps = await create_deps()
@@ -35,7 +34,6 @@ if TYPE_CHECKING:
     from ...llm.groq_client import GroqClient
     from ...observability.telemetry import TelemetryService
     from ...pageindex.page_extractor import PageExtractor
-    from ...pageindex.tree_store import TreeStore
 
 
 @dataclass
@@ -50,14 +48,12 @@ class PageIndexDeps:
 
     Attributes:
         llm: Groq LLM client for sync/async generation.
-        tree_store: Persistent storage for tree indexes and metadata.
         page_extractor: PDF page content extractor (PyMuPDF).
         telemetry: Async SQLite telemetry service for logging.
         query_id: Current query's telemetry tracking ID.
     """
 
     llm: GroqClient
-    tree_store: TreeStore
     page_extractor: PageExtractor
     telemetry: TelemetryService
     query_id: Optional[str] = field(default=None)
@@ -83,13 +79,11 @@ async def create_deps(query_id: Optional[str] = None) -> PageIndexDeps:
     from ...llm.groq_client import GroqClient
     from ...observability.telemetry import get_telemetry_service
     from ...pageindex.page_extractor import PageExtractor
-    from ...pageindex.tree_store import TreeStore
 
     telemetry = await get_telemetry_service()
 
     deps = PageIndexDeps(
         llm=GroqClient(),
-        tree_store=TreeStore(),
         page_extractor=PageExtractor(),
         telemetry=telemetry,
         query_id=query_id,
@@ -99,7 +93,6 @@ async def create_deps(query_id: Optional[str] = None) -> PageIndexDeps:
         "injected.deps_created",
         query_id=query_id,
         has_llm=True,
-        has_tree_store=True,
         has_page_extractor=True,
         has_telemetry=True,
     )

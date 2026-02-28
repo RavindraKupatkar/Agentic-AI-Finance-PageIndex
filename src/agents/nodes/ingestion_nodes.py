@@ -249,6 +249,9 @@ async def generate_tree_index(
 
         tree = await generator.generate_tree(pdf_path)
 
+        # Ensure the tree uses the Document ID from Convex
+        tree.doc_id = state.get("doc_id", tree.doc_id)
+        
         duration_ms = (time.time() - start_time) * 1000
 
         tree_dict = tree.to_dict()
@@ -319,7 +322,7 @@ async def store_tree(
     state: PageIndexIngestionState, config: RunnableConfig
 ) -> dict[str, Any]:
     """
-    💾 STORE TREE — Save tree JSON to data/trees/ + metadata to SQLite.
+    💾 STORE TREE — Save tree JSON to Convex and update document metadata.
 
     Args:
         state: Current state with doc_id and tree_structure.
@@ -340,16 +343,31 @@ async def store_tree(
     )
 
     try:
+        from ...services.convex_service import convex_service
+
         if not tree_structure:
             raise ValueError("No tree structure to store")
 
-        # Reconstruct DocumentTree from the dict stored in state
-        from ...pageindex.tree_generator import DocumentTree
-        tree = DocumentTree.from_dict(tree_structure)
+        # Save to Convex
+        convex_service.save_tree(doc_id, tree_structure)
 
-        # Save using TreeStore — requires DocumentTree + pdf_path
-        pdf_path = state.get("pdf_path", "")
-        tree_path = deps.tree_store.save_tree(tree, pdf_path)
+        nodes = state.get("node_count", 0)
+        depth = state.get("tree_depth", 0)
+        pages = state.get("total_pages", 0)
+
+        # Update document status to "ready"
+        convex_service.update_document_status(
+            document_id=doc_id,
+            status="ready",
+            totalPages=pages,
+            treeDepth=depth,
+            nodeCount=nodes
+        )
+
+        # Cleanup temporary local PDF file used by PyMuPDF
+        pdf_path = state.get("pdf_path")
+        if pdf_path:
+            Path(pdf_path).unlink(missing_ok=True)
 
         duration_ms = (time.time() - start_time) * 1000
 
@@ -357,13 +375,13 @@ async def store_tree(
             node_execution_id=node_exec_id,
             query_id=state.get("query_id", ""),
             node_name="store_tree",
-            output_summary={"tree_path": tree_path, "stored": True},
+            output_summary={"stored": True},
             duration_ms=duration_ms,
         )
 
-        logger.info("store_tree.complete", doc_id=doc_id, tree_path=tree_path)
+        logger.info("store_tree.complete", doc_id=doc_id)
 
-        return {"tree_path": tree_path, "stored": True}
+        return {"tree_path": "convex://trees", "stored": True}
 
     except Exception as exc:
         duration_ms = (time.time() - start_time) * 1000

@@ -52,37 +52,57 @@ async def retrieve_pages(
     )
 
     try:
+        from ...services.convex_service import convex_service
+        import httpx
+        from pathlib import Path
+
+        cache_dir = Path("data/pdfs_cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
         page_contents: list[dict] = []
 
         for doc_id, page_numbers in relevant_pages.items():
             if not page_numbers:
                 continue
 
-            # Resolve full PDF path via TreeStore metadata
-            doc_meta = deps.tree_store.get_metadata(doc_id)
-            if doc_meta and doc_meta.pdf_path:
-                pdf_path = doc_meta.pdf_path
-                filename = doc_meta.filename
-            else:
-                # Fallback: try to get filename from tree structure
-                tree_data = tree_structures.get(doc_id, {})
-                if isinstance(tree_data, dict):
-                    filename = tree_data.get("filename", "")
-                else:
-                    filename = getattr(tree_data, "filename", "")
-                # Try data/pdfs/ directory
-                from pathlib import Path
-                pdf_path = str(Path("data/pdfs") / filename) if filename else ""
+            # Find document info from available docs in state
+            available_docs = state.get("available_docs", [])
+            doc_info = next((d for d in available_docs if d["doc_id"] == doc_id), None)
 
-            if not pdf_path:
-                logger.warning("page_retrieve.no_pdf_path", doc_id=doc_id)
+            if not doc_info or not doc_info.get("storage_id"):
+                logger.warning("page_retrieve.no_storage_id", doc_id=doc_id)
                 continue
+
+            storage_id = doc_info["storage_id"]
+            filename = doc_info["filename"]
+            
+            pdf_path = cache_dir / f"{storage_id}.pdf"
+
+            # Cache miss: Download from Convex Storage
+            if not pdf_path.exists():
+                logger.info("page_retrieve.cache_miss_fetching", doc_id=doc_id, storage_id=storage_id)
+                try:
+                    dl_url = convex_service.get_download_url(storage_id)
+                    if dl_url:
+                        # Blocking IO since we're in async, but httpx allows sync calls here
+                        # Actually it's better to use httpx.AsyncClient or run in thread
+                        # For simplicity, we run in an async thread implicitly or block
+                        # We will use httpx blocking since it's just a quick cache fill
+                        resp = httpx.get(dl_url)
+                        resp.raise_for_status()
+                        pdf_path.write_bytes(resp.content)
+                    else:
+                        logger.error("page_retrieve.no_url_returned", doc_id=doc_id)
+                        continue
+                except Exception as dl_exc:
+                    logger.error("page_retrieve.download_failed", error=str(dl_exc))
+                    continue
 
             # Extract pages using PageExtractor (CPU-bound → thread pool)
             try:
                 result = await asyncio.to_thread(
                     deps.page_extractor.extract_pages,
-                    pdf_path,
+                    str(pdf_path),
                     page_numbers,
                     doc_id,
                 )
@@ -99,7 +119,7 @@ async def retrieve_pages(
                 logger.warning(
                     "page_retrieve.extraction_failed",
                     doc_id=doc_id,
-                    pdf_path=pdf_path,
+                    pdf_path=str(pdf_path),
                     error=str(page_exc),
                 )
                 continue

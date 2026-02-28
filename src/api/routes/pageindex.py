@@ -22,8 +22,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
 from pydantic import BaseModel, Field
+
+from ..auth import verify_clerk_token
 
 from ...agents.schemas.injected import create_deps
 from ...agents.schemas.state import (
@@ -173,7 +175,10 @@ class ErrorResponse(BaseModel):
     "input guardrail → router → document selection → tree search → "
     "page retrieval → critic → answer generation → output guardrail.",
 )
-async def query_documents(request: QueryRequest) -> QueryResponse:
+async def query_documents(
+    request: QueryRequest,
+    clerk_user_id: str = Depends(verify_clerk_token)
+) -> QueryResponse:
     """
     🤖 QUERY — Full PageIndex query pipeline.
 
@@ -324,6 +329,7 @@ async def query_documents(request: QueryRequest) -> QueryResponse:
 )
 async def ingest_document(
     file: UploadFile = File(..., description="PDF file to ingest"),
+    clerk_user_id: str = Depends(verify_clerk_token)
 ) -> IngestResponse:
     """
     📄 INGEST — Full PageIndex document ingestion pipeline.
@@ -343,15 +349,6 @@ async def ingest_document(
                 status_code=400, detail="Only PDF files are accepted."
             )
 
-        # Save uploaded file
-        pdfs_dir = Path(settings.pdfs_dir)
-        if not pdfs_dir.is_absolute():
-            from ...core.config import _PROJECT_ROOT
-
-            pdfs_dir = _PROJECT_ROOT / pdfs_dir
-        pdfs_dir.mkdir(parents=True, exist_ok=True)
-
-        pdf_path = pdfs_dir / file.filename
         content = await file.read()
 
         # Size check
@@ -362,8 +359,6 @@ async def ingest_document(
                 f"(max {settings.max_pdf_size_mb}MB)",
             )
 
-        pdf_path.write_bytes(content)
-
         # Initialize telemetry and deps
         telemetry = await get_telemetry_service()
         query_id = await telemetry.start_query(
@@ -373,11 +368,52 @@ async def ingest_document(
 
         deps = await create_deps(query_id=query_id)
 
-        # Create initial state
+        # ------------------------------------------------------------------
+        # NEW: Upload to Convex Storage before putting it in the local pipeline
+        import httpx
+        from ...services.convex_service import convex_service
+
+        try:
+            upload_url = convex_service.generate_upload_url()
+            # POST the file
+            response = httpx.post(
+                upload_url,
+                headers={"Content-Type": "application/pdf"},
+                content=content
+            )
+            response.raise_for_status()
+            storage_id = response.json()["storageId"]
+            
+            # Save document metadata in Convex to get a 'doc_id'
+            clerk_id = clerk_user_id
+            doc_id = convex_service.save_document_metadata(
+                clerk_id=clerk_id,
+                title=file.filename,
+                filename=file.filename,
+                storage_id=storage_id
+            )
+        except Exception as e:
+            logger.error("ingest.convex_upload_failed", error=str(e))
+            raise HTTPException(status_code=500, detail="Failed to upload PDF to cloud storage.")
+        # ------------------------------------------------------------------
+
+        # Save uploaded file temporarily for PyMuPDF processing
+        pdfs_dir = Path(settings.pdfs_dir)
+        if not pdfs_dir.is_absolute():
+            from ...core.config import _PROJECT_ROOT
+
+            pdfs_dir = _PROJECT_ROOT / pdfs_dir
+        pdfs_dir.mkdir(parents=True, exist_ok=True)
+
+        pdf_path = pdfs_dir / f"{doc_id}.pdf"
+        pdf_path.write_bytes(content)
+
+        # Create initial state using Convex doc_id
         initial_state = create_initial_ingestion_state(
             pdf_path=str(pdf_path),
             filename=file.filename,
             query_id=query_id,
+            doc_id=doc_id,
         )
 
         # Run ingestion graph
@@ -429,22 +465,29 @@ async def ingest_document(
     response_model=list[DocumentInfo],
     summary="List all indexed documents",
 )
-async def list_documents() -> list[DocumentInfo]:
+async def list_documents(
+    clerk_user_id: str = Depends(verify_clerk_token)
+) -> list[DocumentInfo]:
     """📚 LIST — Get all indexed documents and their metadata."""
     try:
-        deps = await create_deps()
-        docs = deps.tree_store.list_documents(validate=True)
+        from ...services.convex_service import convex_service
+        clerk_id = clerk_user_id
+        docs_raw = convex_service.list_documents(clerk_id)
 
-        return [
-            DocumentInfo(
-                doc_id=doc.doc_id,
-                filename=doc.filename,
-                title=doc.title,
-                total_pages=doc.total_pages,
-                description="",
-            )
-            for doc in docs
-        ]
+        docs = []
+        for d in docs_raw:
+            if d.get("status") == "ready":
+                docs.append(
+                    DocumentInfo(
+                        doc_id=d["_id"],
+                        filename=d.get("filename", ""),
+                        title=d.get("title", ""),
+                        total_pages=d.get("totalPages", 0),
+                        description="",
+                    )
+                )
+
+        return docs
     except Exception as exc:
         logger.error("list_documents.failed", error=str(exc))
         raise HTTPException(status_code=500, detail=str(exc))
@@ -521,9 +564,10 @@ async def health_check() -> HealthResponse:
 
         # Check indexed documents
         try:
-            deps = await create_deps()
-            docs = deps.tree_store.list_documents(validate=True)
-            doc_count = len(docs)
+            from ...services.convex_service import convex_service
+            clerk_id = "frontend_user"
+            docs = convex_service.list_documents(clerk_id)
+            doc_count = len([d for d in docs if d.get("status") == "ready"])
         except Exception:
             doc_count = 0
 
@@ -554,26 +598,44 @@ async def health_check() -> HealthResponse:
     "/page/{doc_id}/{page_num}",
     summary="Get page content for citation verification",
 )
-async def get_page_content(doc_id: str, page_num: int) -> dict:
+async def get_page_content(
+    doc_id: str, 
+    page_num: int,
+    clerk_user_id: str = Depends(verify_clerk_token)
+) -> dict:
     """📄 PAGE — Extract text content from a specific PDF page for citation verification."""
     try:
         deps = await create_deps()
 
-        # Find the document filename
-        docs = deps.tree_store.list_documents(validate=True)
-        target_doc = None
-        for doc in docs:
-            if doc.doc_id == doc_id:
-                target_doc = doc
-                break
+        from ...services.convex_service import convex_service
+        # Find document from Convex
+        clerk_id = clerk_user_id
+        docs = convex_service.list_documents(clerk_id)
+        target_doc = next((d for d in docs if d["_id"] == doc_id), None)
 
         if not target_doc:
             raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
 
-        # Resolve PDF path
-        pdf_path = settings.pdfs_dir_absolute / target_doc.filename
+        storage_id = target_doc.get("storageId")
+        if not storage_id:
+            raise HTTPException(status_code=400, detail=f"Document {doc_id} exists but has no storageId")
+
+        # Resolve PDF path locally or download
+        import httpx
+        from pathlib import Path
+        
+        cache_dir = Path("data/pdfs_cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = cache_dir / f"{storage_id}.pdf"
+
         if not pdf_path.exists():
-            raise HTTPException(status_code=404, detail=f"PDF file not found: {target_doc.filename}")
+            dl_url = convex_service.get_download_url(storage_id)
+            if not dl_url:
+                raise HTTPException(status_code=500, detail="Failed to retrieve text download URL from Convex.")
+            
+            resp = httpx.get(dl_url)
+            resp.raise_for_status()
+            pdf_path.write_bytes(resp.content)
 
         # Extract page content
         result = deps.page_extractor.extract_pages(
@@ -589,7 +651,7 @@ async def get_page_content(doc_id: str, page_num: int) -> dict:
         return {
             "doc_id": doc_id,
             "page_num": page_num,
-            "filename": target_doc.filename,
+            "filename": target_doc.get("filename", ""),
             "content": page_text,
         }
     except HTTPException:

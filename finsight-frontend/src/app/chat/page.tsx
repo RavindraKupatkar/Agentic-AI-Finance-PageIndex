@@ -24,8 +24,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth, UserButton, SignOutButton } from "@clerk/nextjs";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1`
+  : "http://localhost:8000/api/v1";
 
 /* ═══════════════════════════════════════════════════════════
    MAGNETIC 3D WRAPPER
@@ -120,11 +126,32 @@ interface Conversation {
    CHAT PAGE
    ═══════════════════════════════════════════════════════════ */
 export default function ChatPage() {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const { getToken, userId: clerkId } = useAuth();
+
+    /* ─── Convex hooks for conversations + messages ─── */
+    const convexConversations = useQuery(api.conversations.listConversations, clerkId ? { clerkId } : "skip");
+    const createConvMutation = useMutation(api.conversations.createConversation);
+    const deleteConvMutation = useMutation(api.conversations.deleteConversation);
+    const sendMessageMutation = useMutation(api.messages.sendMessage);
+    const saveAgentResponseMutation = useMutation(api.messages.saveAgentResponse);
+
+    /* ─── Auth-aware fetch wrapper (for FastAPI calls only) ─── */
+    const authFetch = useCallback(
+        async (url: string, options: RequestInit = {}) => {
+            const token = await getToken();
+            const headers = new Headers(options.headers);
+            if (token) {
+                headers.set("Authorization", `Bearer ${token}`);
+            }
+            return fetch(url, { ...options, headers });
+        },
+        [getToken]
+    );
+
+    const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isThinking, setIsThinking] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConvId, setActiveConvId] = useState<string | null>(null);
     const [threadId, setThreadId] = useState(
         () => `thread_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -134,150 +161,94 @@ export default function ChatPage() {
     const endOfMessagesRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    /* ─── Convex messages for active conversation (real-time) ─── */
+    const convexMessages = useQuery(
+        api.messages.listMessages,
+        activeConvId ? { conversationId: activeConvId as Id<"conversations"> } : "skip"
+    );
+
+    /* ─── Merge Convex messages with local optimistic messages ─── */
+    const messages: ChatMessage[] = activeConvId && convexMessages
+        ? convexMessages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            sources: m.sources as Source[] | undefined,
+            confidence: m.confidence,
+            latencyMs: m.latencyMs,
+            queryType: m.queryType,
+        }))
+        : localMessages;
+
     useEffect(() => {
         endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isThinking]);
 
-    /* ─── Load conversations from /api/v1/conversations ─── */
-    const loadConversations = useCallback(async () => {
-        try {
-            const res = await fetch(`${API_BASE}/conversations?limit=30`);
-            if (res.ok) {
-                const data: Conversation[] = await res.json();
-                setConversations(data);
-            }
-        } catch {
-            /* Silently fail */
-        }
-    }, []);
+    /* ─── Sidebar conversations from Convex (real-time) ─── */
+    const conversations: Conversation[] = (convexConversations || []).map((c) => ({
+        id: c._id,
+        title: c.title,
+        created_at: new Date(c.createdAt).toISOString(),
+    }));
 
-    useEffect(() => {
-        loadConversations();
-    }, [loadConversations]);
-
-    /* ─── Create new conversation ─── */
+    /* ─── Create new conversation via Convex ─── */
     const createConversation = useCallback(
         async (title: string): Promise<string | null> => {
+            if (!clerkId) return null;
             try {
-                const res = await fetch(`${API_BASE}/conversations`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ title }),
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    await loadConversations();
-                    return data.id;
-                }
+                const convId = await createConvMutation({ clerkId, title });
+                return convId;
             } catch {
-                /* Silently fail */
+                return null;
             }
-            return null;
         },
-        [loadConversations]
+        [clerkId, createConvMutation]
     );
 
-    /* ─── Load conversation messages ─── */
-    const loadConversation = useCallback(async (convId: string) => {
-        try {
-            const res = await fetch(`${API_BASE}/conversations/${convId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setActiveConvId(convId);
-                setThreadId(convId);
-                const msgs: ChatMessage[] = (data.messages || []).map(
-                    (m: {
-                        id: number;
-                        role: string;
-                        content: string;
-                        sources?: Source[];
-                        confidence?: number;
-                        latency_ms?: number;
-                    }) => ({
-                        id: m.id,
-                        role: m.role as "user" | "assistant",
-                        content: m.content,
-                        sources: m.sources,
-                        confidence: m.confidence,
-                        latencyMs: m.latency_ms,
-                    })
-                );
-                setMessages(msgs);
-            }
-        } catch {
-            /* Silently fail */
-        }
+    /* ─── Select conversation ─── */
+    const loadConversation = useCallback((convId: string) => {
+        setActiveConvId(convId);
+        setThreadId(convId);
+        setLocalMessages([]);
     }, []);
 
-    /* ─── Save message to conversation ─── */
-    const saveMessage = useCallback(
-        async (
-            convId: string,
-            role: string,
-            content: string,
-            sources?: Source[],
-            confidence?: number,
-            latencyMs?: number
-        ) => {
-            try {
-                await fetch(`${API_BASE}/conversations/${convId}/message`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        role,
-                        content,
-                        sources: sources || null,
-                        confidence: confidence || null,
-                        latency_ms: latencyMs || null,
-                    }),
-                });
-            } catch {
-                /* Silently fail */
-            }
-        },
-        []
-    );
-
-    /* ─── Delete conversation ─── */
+    /* ─── Delete conversation via Convex ─── */
     const deleteConversation = useCallback(
         async (convId: string) => {
             try {
-                await fetch(`${API_BASE}/conversations/${convId}`, {
-                    method: "DELETE",
-                });
+                await deleteConvMutation({ conversationId: convId as Id<"conversations"> });
                 if (activeConvId === convId) {
-                    setMessages([]);
+                    setLocalMessages([]);
                     setActiveConvId(null);
                 }
-                await loadConversations();
             } catch {
                 /* Silently fail */
             }
         },
-        [activeConvId, loadConversations]
+        [activeConvId, deleteConvMutation]
     );
 
     /* ─── New chat ─── */
     const startNewChat = useCallback(() => {
-        setMessages([]);
+        setLocalMessages([]);
         setActiveConvId(null);
         setThreadId(
             `thread_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
         );
     }, []);
 
-    /* ─── Send Query to Real Backend ─── */
+    /* ─── Send Query: Convex for messages + FastAPI for LLM pipeline ─── */
     const handleSend = useCallback(
         async (e?: React.FormEvent) => {
             e?.preventDefault();
             const question = inputValue.trim();
             if (!question || isThinking) return;
 
-            setMessages((prev) => [...prev, { role: "user", content: question }]);
+            /* Optimistic local message */
+            setLocalMessages((prev) => [...prev, { role: "user", content: question }]);
             setInputValue("");
             setIsThinking(true);
 
-            /* Create conversation if none exists */
+            /* Create conversation in Convex if none exists */
             let convId = activeConvId;
             if (!convId) {
                 const title =
@@ -289,13 +260,18 @@ export default function ChatPage() {
                 }
             }
 
-            /* Save user message */
+            /* Save user message to Convex */
             if (convId) {
-                await saveMessage(convId, "user", question);
+                try {
+                    await sendMessageMutation({
+                        conversationId: convId as Id<"conversations">,
+                        content: question,
+                    });
+                } catch { /* Convex save failed, continue anyway */ }
             }
 
             try {
-                const res = await fetch(`${API_BASE}/pageindex/query`, {
+                const res = await authFetch(`${API_BASE}/pageindex/query`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -323,18 +299,20 @@ export default function ChatPage() {
                     latencyMs: data.latency_ms,
                 };
 
-                setMessages((prev) => [...prev, assistantMsg]);
+                setLocalMessages((prev) => [...prev, assistantMsg]);
 
-                /* Save assistant response */
+                /* Save assistant response to Convex */
                 if (convId) {
-                    await saveMessage(
-                        convId,
-                        "assistant",
-                        assistantMsg.content,
-                        assistantMsg.sources,
-                        assistantMsg.confidence,
-                        assistantMsg.latencyMs
-                    );
+                    try {
+                        await saveAgentResponseMutation({
+                            conversationId: convId as Id<"conversations">,
+                            content: assistantMsg.content,
+                            sources: assistantMsg.sources,
+                            confidence: assistantMsg.confidence,
+                            latencyMs: assistantMsg.latencyMs,
+                            queryType: assistantMsg.queryType,
+                        });
+                    } catch { /* Convex save failed, local state still has the message */ }
                 }
             } catch (err) {
                 const errorMessage =
@@ -343,7 +321,7 @@ export default function ChatPage() {
                     role: "assistant",
                     content: `Error: ${errorMessage}. Please check that the backend server is running on port 8000.`,
                 };
-                setMessages((prev) => [...prev, errorMsg]);
+                setLocalMessages((prev) => [...prev, errorMsg]);
             } finally {
                 setIsThinking(false);
             }
@@ -354,7 +332,9 @@ export default function ChatPage() {
             threadId,
             activeConvId,
             createConversation,
-            saveMessage,
+            sendMessageMutation,
+            saveAgentResponseMutation,
+            authFetch,
         ]
     );
 
@@ -374,7 +354,7 @@ export default function ChatPage() {
                 const formData = new FormData();
                 formData.append("file", file);
 
-                const res = await fetch(`${API_BASE}/pageindex/ingest`, {
+                const res = await authFetch(`${API_BASE}/pageindex/ingest`, {
                     method: "POST",
                     body: formData,
                 });
@@ -395,9 +375,9 @@ export default function ChatPage() {
                     role: "assistant",
                     content: `Successfully indexed **${data.filename}**\n\n- **Pages**: ${data.total_pages}\n- **Tree nodes**: ${data.node_count}\n- **Tree depth**: ${data.tree_depth}\n\nYou can now ask questions about this document.`,
                 };
-                setMessages((prev) => [...prev, systemMsg]);
+                setLocalMessages((prev) => [...prev, systemMsg]);
 
-                /* Attach document to conversation */
+                /* Attach document to conversation via Convex */
                 let convId = activeConvId;
                 if (!convId) {
                     convId = await createConversation(`Uploaded: ${data.filename}`);
@@ -408,19 +388,11 @@ export default function ChatPage() {
                 }
                 if (convId) {
                     try {
-                        await fetch(`${API_BASE}/conversations/${convId}/document`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                doc_id: data.doc_id || data.filename,
-                                filename: data.filename,
-                                total_pages: data.total_pages,
-                            }),
+                        await saveAgentResponseMutation({
+                            conversationId: convId as Id<"conversations">,
+                            content: systemMsg.content,
                         });
-                    } catch {
-                        /* Silently fail */
-                    }
-                    await saveMessage(convId, "assistant", systemMsg.content);
+                    } catch { /* Convex save failed */ }
                 }
 
                 setTimeout(() => {
@@ -437,7 +409,7 @@ export default function ChatPage() {
                 }, 5000);
             }
         },
-        [activeConvId, createConversation, saveMessage]
+        [activeConvId, createConversation, saveAgentResponseMutation, authFetch]
     );
 
     return (
@@ -580,6 +552,13 @@ export default function ChatPage() {
                         >
                             <ArrowLeft size={16} />
                         </Link>
+                        <UserButton
+                            appearance={{
+                                elements: {
+                                    avatarBox: "w-8 h-8 border border-white/20",
+                                },
+                            }}
+                        />
                     </div>
                 </motion.nav>
 

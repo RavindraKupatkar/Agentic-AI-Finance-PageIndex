@@ -15,6 +15,7 @@ from .routes.conversations import router as conversations_router
 from .middleware.tracing import TracingMiddleware
 from ..observability.tracing import setup_tracing
 from ..observability.logging import setup_logging
+from ..core.config import settings
 
 
 @asynccontextmanager
@@ -40,10 +41,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Middleware
+# CORS Middleware — locked to explicit origins
+# Set ALLOWED_ORIGINS env var in production (comma-separated)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

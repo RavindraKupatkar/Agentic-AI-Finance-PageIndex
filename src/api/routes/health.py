@@ -1,12 +1,19 @@
 """
-Health Check Routes - Kubernetes liveness/readiness probes
+Health Check Routes — Liveness / Readiness probes
+
+Compatible with Render, Kubernetes, and Docker HEALTHCHECK.
 """
+
+from pathlib import Path
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Dict
 
 router = APIRouter()
+
+# Project root: 4 levels up from src/api/routes/health.py
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
 class HealthResponse(BaseModel):
@@ -17,47 +24,48 @@ class HealthResponse(BaseModel):
 
 @router.get("/health")
 async def health_check():
-    """Basic health check"""
+    """Basic health check — used by Render & Docker HEALTHCHECK."""
     return {"status": "healthy"}
 
 
 @router.get("/ready", response_model=HealthResponse)
 async def readiness_check():
     """
-    Kubernetes readiness probe
-    Checks all dependencies are available
+    Readiness probe — verifies PageIndex components are operational.
+
+    Checks:
+    - data/trees directory exists (tree store accessible)
+    - Groq LLM client can be instantiated
     """
-    from ...vectorstore.qdrant_store import QdrantStore
-    from ...llm.groq_client import GroqClient
-    
-    components = {}
-    
-    # Check vector store
+    components: Dict[str, str] = {}
+
+    # Check tree store directory
+    trees_dir = _PROJECT_ROOT / "data" / "trees"
+    if trees_dir.is_dir():
+        tree_count = len(list(trees_dir.glob("*.json")))
+        components["tree_store"] = f"healthy ({tree_count} trees)"
+    else:
+        components["tree_store"] = "degraded: data/trees/ not found"
+
+    # Check LLM client
     try:
-        store = QdrantStore()
-        store.health_check()
-        components["vectorstore"] = "healthy"
-    except Exception as e:
-        components["vectorstore"] = f"unhealthy: {e}"
-    
-    # Check LLM
-    try:
-        llm = GroqClient()
-        llm.health_check()
+        from ...llm.groq_client import GroqClient
+
+        GroqClient()
         components["llm"] = "healthy"
     except Exception as e:
         components["llm"] = f"unhealthy: {e}"
-    
-    all_healthy = all(v == "healthy" for v in components.values())
-    
+
+    all_healthy = all("healthy" in v for v in components.values())
+
     return HealthResponse(
         status="ready" if all_healthy else "degraded",
         version="1.0.0",
-        components=components
+        components=components,
     )
 
 
 @router.get("/live")
 async def liveness_check():
-    """Kubernetes liveness probe"""
+    """Liveness probe."""
     return {"status": "alive"}

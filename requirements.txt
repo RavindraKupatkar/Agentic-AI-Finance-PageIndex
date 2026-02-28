@@ -50,3 +50,6 @@ mypy>=1.8.0
 # Evaluation
 ragas>=0.1.0
 datasets>=2.16.0
+
+# Authentication
+PyJWT[crypto]>=2.8.0

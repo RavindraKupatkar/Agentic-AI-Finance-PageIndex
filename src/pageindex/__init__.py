@@ -12,12 +12,9 @@ Note: TreeGenerator and PageExtractor require PyMuPDF (fitz).
       Imports are lazy to avoid import errors when fitz is not installed.
 """
 
-from .tree_store import TreeStore
-
 # Lazy imports for modules that require PyMuPDF
 __all__ = [
     "TreeGenerator",
-    "TreeStore",
     "TreeSearcher",
     "PageExtractor",
 ]

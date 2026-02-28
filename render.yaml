@@ -1,0 +1,59 @@
+# =====================================================
+# Render Blueprint — FinSight PageIndex Finance RAG
+# https://docs.render.com/infrastructure-as-code
+# =====================================================
+#
+# Deploy:  Connect this repo on Render Dashboard → "New Blueprint Instance"
+# Or:      render blueprint apply
+#
+# This defines the FastAPI backend only.
+# The Next.js frontend is deployed on Vercel separately.
+
+services:
+  - type: web
+    name: finsight-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+
+    # ─── Build & Start ──────────────────────────────
+    # Render auto-detects Dockerfile and runs CMD.
+    # PORT is injected automatically by Render.
+
+    # ─── Health Check ───────────────────────────────
+    healthCheckPath: /health
+
+    # ─── Persistent Disk ────────────────────────────
+    # Stores PDFs, tree JSON indexes, and SQLite telemetry DB.
+    disk:
+      name: finsight-data
+      mountPath: /app/data
+      sizeGB: 1
+
+    # ─── Auto-scaling ───────────────────────────────
+    plan: starter
+    numInstances: 1
+
+    # ─── Environment Variables ──────────────────────
+    envVars:
+      # Required
+      - key: GROQ_API_KEY
+        sync: false  # Set manually in Render dashboard
+
+      # Application mode
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+
+      # Clerk JWT verification
+      - key: CLERK_ISSUER_URL
+        sync: false  # Set from Clerk dashboard
+
+      # Convex backend URL
+      - key: CONVEX_URL
+        sync: false  # Set from Convex dashboard
+
+      # CORS — your Vercel frontend URL
+      - key: ALLOWED_ORIGINS
+        sync: false  # e.g. https://finsight.vercel.app

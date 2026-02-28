@@ -270,6 +270,7 @@ def create_initial_ingestion_state(
     pdf_path: str,
     filename: Optional[str] = None,
     query_id: Optional[str] = None,
+    doc_id: str = "",
 ) -> PageIndexIngestionState:
     """
     Create initial state for document ingestion.
@@ -278,6 +279,7 @@ def create_initial_ingestion_state(
         pdf_path: Absolute path to the PDF file.
         filename: Original filename (extracted from path if None).
         query_id: Telemetry tracking ID.
+        doc_id: Pre-assigned Convex document ID.
 
     Returns:
         Initialized PageIndexIngestionState with safe defaults.
@@ -295,7 +297,7 @@ def create_initial_ingestion_state(
         title="",
         existing_toc=None,
         page_texts=[],
-        doc_id="",
+        doc_id=doc_id,
         tree_structure=None,
         tree_depth=0,
         node_count=0,

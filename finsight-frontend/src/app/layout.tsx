@@ -19,6 +19,8 @@ export const metadata: Metadata = {
 
 import { BackgroundVignette } from "@/components/BackgroundVignette";
 
+import ConvexClientProvider from "@/components/convex-client-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,8 +32,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <BackgroundVignette />
-        {children}
+        <ConvexClientProvider>
+          <BackgroundVignette />
+          {children}
+        </ConvexClientProvider>
       </body>
     </html>
   );
