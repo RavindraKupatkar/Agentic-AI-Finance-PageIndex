@@ -154,6 +154,24 @@ class TelemetryService:
         except Exception:
             pass
 
+    async def log_state_snapshot(
+        self,
+        session_id: str,
+        query_id: str,
+        node_name: str,
+        data: Optional[dict] = None,
+    ):
+        """Log a state snapshot after a node executes (used by query graph logging wrapper)."""
+        try:
+            convex_service.log_event(
+                event_type="state_snapshot",
+                query_id=query_id,
+                node_name=node_name,
+                details={"session_id": session_id},
+            )
+        except Exception:
+            pass
+
     async def log_conversation(self, session_id: str, user_id: Optional[str], user_message: str, agent_response: Optional[str], duration_ms: Optional[float], metadata: Optional[dict] = None):
         """Conversations are handled by the Convex conversations table directly, but this logs the turn."""
         pass

@@ -316,7 +316,12 @@ async def generate_tree_index(
             exception=exc,
             recovery_action="abort",
         )
-        return {"error": f"Tree generation failed: {str(exc)}"}
+        return {
+            "error": f"Tree generation failed: {str(exc)}",
+            "tree_structure": None,
+            "is_valid": False,
+            "validation_error": f"Tree generation failed: {str(exc)}",
+        }
 
 async def store_tree(
     state: PageIndexIngestionState, config: RunnableConfig

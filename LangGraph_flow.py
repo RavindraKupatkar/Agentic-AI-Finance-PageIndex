@@ -118,6 +118,13 @@ def check_document_valid(state: PageIndexIngestionState) -> Literal["valid", "in
     return "valid" if state.get("is_valid", False) else "invalid"
 
 
+def check_tree_generated(state: PageIndexIngestionState) -> Literal["success", "failed"]:
+    """Route based on whether tree generation produced a result or an error."""
+    if state.get("error") or not state.get("tree_structure"):
+        return "failed"
+    return "success"
+
+
 # ═══════════════════════════════════════════════════════════
 # QUERY GRAPH BUILDER
 # ═══════════════════════════════════════════════════════════
@@ -259,7 +266,11 @@ def build_ingestion_graph() -> StateGraph:
         {"valid": "generate_tree", "invalid": "ingestion_error"},
     )
 
-    graph.add_edge("generate_tree", "store")
+    graph.add_conditional_edges(
+        "generate_tree",
+        check_tree_generated,
+        {"success": "store", "failed": "ingestion_error"},
+    )
     graph.add_edge("store", END)
     graph.add_edge("ingestion_error", END)
 
