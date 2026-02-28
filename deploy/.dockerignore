@@ -1,0 +1,49 @@
+# =====================================================
+# Docker Build Ignore — FinSight Backend
+# =====================================================
+
+# Python
+__pycache__/
+*.pyc
+*.py[cod]
+venv/
+env/
+.venv/
+
+# Environment secrets
+.env
+.env.local
+.env.production
+
+# Frontend (deployed separately on Vercel)
+finsight-frontend/
+
+# Git
+.git/
+.github/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing / dev artifacts
+tests/
+*.log
+data/temp_*
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Docs
+docs/
+logo/
+*.md
+!requirements.txt
+
+# Docker (don't send compose to backend image)
+docker-compose.yaml
+render.yaml
