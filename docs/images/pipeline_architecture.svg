@@ -1,0 +1,364 @@
+<svg viewBox="0 0 800 1100" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .txt-title { font-size: 13px; font-weight: 600; fill: #1f2937; text-anchor: middle; alignment-baseline: middle; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .txt-title-white { font-size: 13px; font-weight: 600; fill: #fff; text-anchor: middle; alignment-baseline: middle; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .txt-sub { font-size: 10px; font-weight: 500; fill: #6b7280; text-anchor: middle; alignment-baseline: middle; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .txt-sub-red { font-size: 10px; font-weight: 500; fill: #9f1239; text-anchor: middle; alignment-baseline: middle; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .txt-header { font-size: 22px; font-weight: 700; fill: #111827; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .group-lbl { font-size: 12px; font-weight: 700; fill: #64748b; letter-spacing: 1px; text-anchor: middle; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .edge-lbl { font-size: 11px; font-weight: 600; fill: #64748b; text-anchor: middle; alignment-baseline: middle; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .edge-line { fill: none; stroke: #94a3b8; stroke-width: 2px; stroke-linejoin: round; }
+        .group-box { fill: rgba(248, 250, 252, 0.6); stroke: #cbd5e1; stroke-width: 1.5px; stroke-dasharray: 6, 4; rx: 8px; }
+        .node-rect { transition: filter 0.2s; cursor: pointer; }
+        .node-rect:hover { filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1)); }
+    </style>
+    
+    <defs>
+        <!-- Background -->
+        <rect id="bg" width="800" height="1100" fill="#f9fafb"/>
+        
+        <!-- Production-grade shadow with layered depth -->
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+            <feOffset dx="0" dy="1" result="offsetblur1"/>
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.1"/>
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
+        <!-- Multi-layer glow for premium particle effect -->
+        <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur1"/>
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur2"/>
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur3"/>
+            <feMerge>
+                <feMergeNode in="blur3"/>
+                <feMergeNode in="blur2"/>
+                <feMergeNode in="blur1"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        
+        <!-- Soft glow for ambient particles -->
+        <filter id="glow-soft" x="-150%" y="-150%" width="400%" height="400%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+            <feComponentTransfer in="blur" result="softblur">
+                <feFuncA type="linear" slope="0.5"/>
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode in="softblur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
+        <!-- Arrow with subtle gradient -->
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+        </marker>
+
+        <!-- Node templates -->
+        <g id="node-gray">
+            <rect x="-50" y="-25" width="100" height="50" rx="25" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="node-red">
+            <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#ffe4e6" stroke="#fecdd3" stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="node-blue">
+            <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#dbeafe" stroke="#bfdbfe" stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="node-cyan">
+            <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#cffafe" stroke="#a5f3fc" stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="node-green">
+            <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#dcfce7" stroke="#bbf7d0" stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="diamond-purple">
+            <polygon points="0,-40 40,0 0,40 -40,0" fill="#e9d5ff" stroke="#d8b4fe" stroke-width="2" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="diamond-yellow">
+            <polygon points="0,-40 40,0 0,40 -40,0" fill="#fef08a" stroke="#fde047" stroke-width="2" filter="url(#shadow)" class="node-rect" />
+        </g>
+        <g id="edge-tag-border">
+            <rect x="-35" y="-10" width="70" height="20" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1" />
+        </g>
+        <g id="edge-tag-border-lg">
+            <rect x="-45" y="-10" width="90" height="20" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1" />
+        </g>
+        
+        <!-- Precisely crafted paths with smooth bezier curves for natural flow -->
+        <path id="path_standard" d="M 400,125 L 400,155 L 400,205 L 400,230 Q 400,250 420,260 L 440,270 L 550,270 L 550,415 L 550,465 Q 550,485 530,495 L 510,505 L 410,510 L 400,535 L 400,585 L 400,635 L 400,680 L 400,760 L 400,805 L 400,855 L 400,905 L 400,955 L 400,1005 L 400,1030" />
+        <path id="path_complex" d="M 400,125 L 400,155 L 400,205 L 400,230 Q 400,250 380,260 L 360,270 L 250,270 L 250,315 L 250,365 L 250,415 L 250,465 Q 250,485 270,495 L 290,505 L 390,510 L 400,535 L 400,585 L 400,635 L 400,680 L 400,760 L 400,805 L 400,855 L 400,905 L 400,955 L 400,1005 L 400,1030" />
+        <path id="path_retry" d="M 400,680 Q 420,700 440,720 L 650,720 L 650,510 Q 630,505 610,505 L 510,505 L 410,510 L 400,535 L 400,585 L 400,635 L 400,680" />
+        
+        <!-- Radial gradients for particle depth -->
+        <radialGradient id="grad-blue">
+            <stop offset="0%" stop-color="#60a5fa" stop-opacity="1"/>
+            <stop offset="70%" stop-color="#3b82f6" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#2563eb" stop-opacity="0.4"/>
+        </radialGradient>
+        <radialGradient id="grad-green">
+            <stop offset="0%" stop-color="#4ade80" stop-opacity="1"/>
+            <stop offset="70%" stop-color="#10b981" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#059669" stop-opacity="0.4"/>
+        </radialGradient>
+        <radialGradient id="grad-orange">
+            <stop offset="0%" stop-color="#fb923c" stop-opacity="1"/>
+            <stop offset="70%" stop-color="#f97316" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#ea580c" stop-opacity="0.4"/>
+        </radialGradient>
+        <radialGradient id="grad-purple">
+            <stop offset="0%" stop-color="#a78bfa" stop-opacity="1"/>
+            <stop offset="70%" stop-color="#8b5cf6" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.3"/>
+        </radialGradient>
+        <radialGradient id="grad-cyan">
+            <stop offset="0%" stop-color="#22d3ee" stop-opacity="1"/>
+            <stop offset="70%" stop-color="#06b6d4" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#0891b2" stop-opacity="0.3"/>
+        </radialGradient>
+    </defs>
+
+    <!-- Background -->
+    <use href="#bg"/>
+
+    <!-- Title -->
+    <text x="30" y="45" class="txt-header">RAG Pipeline Flow</text>
+
+    <!-- Background Groups -->
+    <rect class="group-box" x="170" y="270" width="460" height="390" />
+    <text x="400" y="645" class="group-lbl">RETRIEVAL CORE</text>
+
+    <rect class="group-box" x="230" y="680" width="340" height="210" />
+    <text x="400" y="875" class="group-lbl">EVAL &amp; GENERATION</text>
+
+    <!-- Edge paths -->
+    <g class="edge-line">
+        <path d="M 400 125 L 400 155" marker-end="url(#arr)" />
+        <path d="M 400 205 L 400 230" marker-end="url(#arr)" />
+        <path d="M 360 270 L 250 270 L 250 315" marker-end="url(#arr)" />
+        <path d="M 440 270 L 550 270 L 550 415" marker-end="url(#arr)" />
+        <path d="M 250 365 L 250 415" marker-end="url(#arr)" />
+        <path d="M 250 465 L 250 510 L 390 510" marker-end="url(#arr)" />
+        <path d="M 550 465 L 550 510 L 410 510" marker-end="url(#arr)" />
+        <path d="M 400 535 L 400 585" marker-end="url(#arr)" />
+        <path d="M 400 635 L 400 680" marker-end="url(#arr)" />
+        <path d="M 400 760 L 400 805" marker-end="url(#arr)" />
+        <path d="M 440 720 L 650 720 L 650 510 L 410 510" marker-end="url(#arr)" />
+        <path d="M 400 855 L 400 905" marker-end="url(#arr)" />
+        <path d="M 400 955 L 400 1005" marker-end="url(#arr)" />
+    </g>
+
+    <!-- Edge Labels -->
+    <g transform="translate(290, 270)">
+        <use href="#edge-tag-border" />
+        <text class="edge-lbl">Complex</text>
+    </g>
+    <g transform="translate(510, 270)">
+        <use href="#edge-tag-border" />
+        <text class="edge-lbl">Standard</text>
+    </g>
+    <g transform="translate(435, 765)">
+        <use href="#edge-tag-border" />
+        <text class="edge-lbl">Pass</text>
+    </g>
+    <g transform="translate(650, 610)">
+        <use href="#edge-tag-border-lg" />
+        <text class="edge-lbl">Retry Search</text>
+    </g>
+
+    <!-- Nodes -->
+    <g transform="translate(400, 100)">
+        <use href="#node-gray" />
+        <text class="txt-title">User Query</text>
+    </g>
+
+    <g transform="translate(400, 180)">
+        <use href="#node-red" />
+        <text y="-5" class="txt-title" style="fill:#9f1239">Input Guardrails</text>
+        <text y="10" class="txt-sub-red">Validation/Safeguard</text>
+    </g>
+
+    <g transform="translate(400, 270)">
+        <use href="#diamond-purple" />
+        <text class="txt-title" style="fill:#581c87">Router</text>
+    </g>
+
+    <g transform="translate(250, 340)">
+        <use href="#node-blue" />
+        <text y="-8" class="txt-title" style="fill:#1e3a8a">Planner</text>
+        <text y="8" class="txt-sub" style="fill:#1e3a8a">Decompose</text>
+    </g>
+
+    <g transform="translate(250, 440)">
+        <use href="#node-cyan" />
+        <text y="-8" class="txt-title" style="fill:#164e63">Doc Selector</text>
+        <text y="8" class="txt-sub" style="fill:#164e63">Filter Relevant</text>
+    </g>
+
+    <g transform="translate(550, 440)">
+        <use href="#node-cyan" />
+        <text y="-8" class="txt-title" style="fill:#164e63">Doc Selector</text>
+        <text y="8" class="txt-sub" style="fill:#164e63">Filter Relevant</text>
+    </g>
+
+    <g transform="translate(400, 510)">
+        <use href="#node-cyan" />
+        <text y="-8" class="txt-title" style="fill:#164e63">Tree Search</text>
+        <text y="8" class="txt-sub" style="fill:#164e63">Node traversal</text>
+    </g>
+
+    <g transform="translate(400, 610)">
+        <use href="#node-cyan" />
+        <text y="-8" class="txt-title" style="fill:#164e63">Page Retrieve</text>
+        <text y="8" class="txt-sub" style="fill:#164e63">Extract snippets</text>
+    </g>
+
+    <g transform="translate(400, 720)">
+        <use href="#diamond-yellow" />
+        <text class="txt-title" style="fill:#854d0e">Critic</text>
+    </g>
+
+    <g transform="translate(400, 830)">
+        <use href="#node-green" />
+        <text y="-8" class="txt-title" style="fill:#14532d">Generator</text>
+        <text y="8" class="txt-sub" style="fill:#14532d">Synthesize</text>
+    </g>
+
+    <g transform="translate(400, 930)">
+        <use href="#node-red" />
+        <text y="-5" class="txt-title" style="fill:#9f1239">Output Guardrails</text>
+        <text y="10" class="txt-sub-red">Filter &amp; Format</text>
+    </g>
+
+    <g transform="translate(400, 1030)">
+        <use href="#node-gray" />
+        <text class="txt-title">Result</text>
+    </g>
+
+    <!-- ============================================ -->
+    <!-- PRODUCTION-GRADE PARTICLE ANIMATION SYSTEM   -->
+    <!-- ============================================ -->
+    
+    <!-- PRIMARY PARTICLES - Hero data flow with easing -->
+    
+    <!-- Standard Path - Primary Blue (Lead particle) -->
+    <circle r="6" fill="url(#grad-blue)" filter="url(#glow)">
+        <animateMotion dur="7s" repeatCount="indefinite" keyPoints="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_standard" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.05;0.9;0.95;1" dur="7s" repeatCount="indefinite" />
+    </circle>
+    
+    <!-- Complex Path - Primary Green (Lead particle) -->
+    <circle r="6" fill="url(#grad-green)" filter="url(#glow)">
+        <animateMotion begin="1.2s" dur="8s" repeatCount="indefinite" keyPoints="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_complex" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.05;0.9;0.95;1" dur="8s" begin="1.2s" repeatCount="indefinite" />
+    </circle>
+    
+    <!-- Retry Loop - Primary Orange -->
+    <circle r="5.5" fill="url(#grad-orange)" filter="url(#glow)">
+        <animateMotion begin="0.8s" dur="4.5s" repeatCount="indefinite" keyPoints="0;0.12;0.25;0.37;0.5;0.62;0.75;0.87;1" keyTimes="0;0.12;0.25;0.37;0.5;0.62;0.75;0.87;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_retry" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.1;0.85;0.95;1" dur="4.5s" begin="0.8s" repeatCount="indefinite" />
+    </circle>
+
+    <!-- SECONDARY PARTICLES - Supporting flow with varied timing -->
+    
+    <circle r="5" fill="url(#grad-blue)" filter="url(#glow)">
+        <animateMotion begin="3.5s" dur="7s" repeatCount="indefinite" keyPoints="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_standard" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.05;0.9;0.95;1" dur="7s" begin="3.5s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="5" fill="url(#grad-green)" filter="url(#glow)">
+        <animateMotion begin="5.4s" dur="8s" repeatCount="indefinite" keyPoints="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_complex" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.05;0.9;0.95;1" dur="8s" begin="5.4s" repeatCount="indefinite" />
+    </circle>
+
+    <!-- TERTIARY PARTICLES - Ambient flow layer with soft glow -->
+    
+    <circle r="3.5" fill="url(#grad-purple)" filter="url(#glow-soft)">
+        <animateMotion begin="1.8s" dur="6.5s" repeatCount="indefinite" keyPoints="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1" keyTimes="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1">
+            <mpath href="#path_standard" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.6;0.6;0.6;0" keyTimes="0;0.1;0.85;0.9;1" dur="6.5s" begin="1.8s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="3.5" fill="url(#grad-cyan)" filter="url(#glow-soft)">
+        <animateMotion begin="4.2s" dur="7.5s" repeatCount="indefinite" keyPoints="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1" keyTimes="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1">
+            <mpath href="#path_complex" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.6;0.6;0.6;0" keyTimes="0;0.1;0.85;0.9;1" dur="7.5s" begin="4.2s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="3" fill="url(#grad-orange)" filter="url(#glow-soft)">
+        <animateMotion begin="3.1s" dur="4.2s" repeatCount="indefinite" keyPoints="0;0.15;0.3;0.45;0.6;0.75;0.9;1" keyTimes="0;0.15;0.3;0.45;0.6;0.75;0.9;1" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1">
+            <mpath href="#path_retry" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.5;0.5;0.5;0" keyTimes="0;0.15;0.8;0.9;1" dur="4.2s" begin="3.1s" repeatCount="indefinite" />
+    </circle>
+
+    <!-- MICRO PARTICLES - Fast background flow for density -->
+    
+    <circle r="2.5" fill="#60a5fa" filter="url(#glow-soft)" opacity="0.5">
+        <animateMotion begin="0.5s" dur="5s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#path_standard" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.4;0.4;0" keyTimes="0;0.1;0.85;1" dur="5s" begin="0.5s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="2.5" fill="#4ade80" filter="url(#glow-soft)" opacity="0.5">
+        <animateMotion begin="2.7s" dur="5.5s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#path_complex" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.4;0.4;0" keyTimes="0;0.1;0.85;1" dur="5.5s" begin="2.7s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="2" fill="#fb923c" filter="url(#glow-soft)" opacity="0.4">
+        <animateMotion begin="1.5s" dur="3.5s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#path_retry" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.3;0.3;0" keyTimes="0;0.15;0.8;1" dur="3.5s" begin="1.5s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="2.5" fill="#a78bfa" filter="url(#glow-soft)" opacity="0.5">
+        <animateMotion begin="6.2s" dur="5.2s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#path_standard" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.4;0.4;0" keyTimes="0;0.1;0.85;1" dur="5.2s" begin="6.2s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="2.5" fill="#22d3ee" filter="url(#glow-soft)" opacity="0.5">
+        <animateMotion begin="7.8s" dur="5.8s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#path_complex" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.4;0.4;0" keyTimes="0;0.1;0.85;1" dur="5.8s" begin="7.8s" repeatCount="indefinite" />
+    </circle>
+
+    <!-- TRAIL EFFECT PARTICLES - Following primary particles -->
+    
+    <circle r="4" fill="url(#grad-blue)" filter="url(#glow-soft)">
+        <animateMotion begin="0.3s" dur="7s" repeatCount="indefinite" keyPoints="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_standard" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.7;0.7;0.7;0" keyTimes="0;0.05;0.9;0.95;1" dur="7s" begin="0.3s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="4" fill="url(#grad-green)" filter="url(#glow-soft)">
+        <animateMotion begin="1.5s" dur="8s" repeatCount="indefinite" keyPoints="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;0.96;1" calcMode="spline" keySplines="0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1; 0.42 0 0.58 1">
+            <mpath href="#path_complex" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.7;0.7;0.7;0" keyTimes="0;0.05;0.9;0.95;1" dur="8s" begin="1.5s" repeatCount="indefinite" />
+    </circle>
+
+</svg>

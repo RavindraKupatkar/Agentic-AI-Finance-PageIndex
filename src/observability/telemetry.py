@@ -105,11 +105,39 @@ CREATE TABLE IF NOT EXISTS errors (
 );
 """
 
+_CREATE_CONVERSATION_HISTORY = """
+CREATE TABLE IF NOT EXISTS conversation_history (
+    id              TEXT PRIMARY KEY,
+    session_id      TEXT NOT NULL,
+    user_id         TEXT,
+    user_message    TEXT NOT NULL,
+    agent_response  TEXT,
+    duration_ms     REAL,
+    metadata        TEXT,
+    created_at      TEXT NOT NULL
+);
+"""
+
+_CREATE_LOGS = """
+CREATE TABLE IF NOT EXISTS logs (
+    id              TEXT PRIMARY KEY,
+    session_id      TEXT NOT NULL,
+    query_id        TEXT,
+    node_name       TEXT NOT NULL,
+    event_type      TEXT NOT NULL DEFAULT 'state_snapshot',
+    data            TEXT,
+    user_id         TEXT,
+    created_at      TEXT NOT NULL
+);
+"""
+
 _ALL_SCHEMAS = [
     _CREATE_QUERY_LOGS,
     _CREATE_NODE_EXECUTIONS,
     _CREATE_LLM_CALLS,
     _CREATE_ERRORS,
+    _CREATE_CONVERSATION_HISTORY,
+    _CREATE_LOGS,
 ]
 
 
@@ -204,7 +232,7 @@ class TelemetryService:
             logger.info(
                 "telemetry.initialized",
                 db_path=self.db_path,
-                tables=["query_logs", "node_executions", "llm_calls", "errors"],
+                tables=["query_logs", "node_executions", "llm_calls", "errors", "conversation_history", "logs"],
             )
         except Exception as exc:
             logger.error(
@@ -505,6 +533,78 @@ class TelemetryService:
             recovery_action=recovery_action,
         )
 
+    # ─── Conversation & State Logging ──────────────────
+
+    async def log_conversation(
+        self,
+        session_id: str,
+        user_message: str,
+        agent_response: Optional[str] = None,
+        user_id: Optional[str] = None,
+        duration_ms: Optional[float] = None,
+        metadata: Optional[dict] = None,
+    ) -> str:
+        """Log a conversation exchange to the conversation_history table."""
+        record_id = _generate_query_id()
+        await self._execute_write(
+            """
+            INSERT INTO conversation_history
+                (id, session_id, user_id, user_message, agent_response,
+                 duration_ms, metadata, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                record_id,
+                session_id,
+                user_id,
+                user_message,
+                agent_response,
+                duration_ms,
+                _safe_json(metadata),
+                _now_iso(),
+            ),
+        )
+        logger.info(
+            "telemetry.conversation_logged",
+            session_id=session_id,
+            user_id=user_id,
+            duration_ms=duration_ms,
+        )
+        return record_id
+
+    async def log_state_snapshot(
+        self,
+        session_id: str,
+        query_id: str,
+        node_name: str,
+        data: Optional[dict] = None,
+        user_id: Optional[str] = None,
+    ) -> str:
+        """Log a LangGraph state snapshot to the logs table."""
+        record_id = _generate_query_id()
+        await self._execute_write(
+            """
+            INSERT INTO logs
+                (id, session_id, query_id, node_name, event_type, data, user_id, created_at)
+            VALUES (?, ?, ?, ?, 'state_snapshot', ?, ?, ?)
+            """,
+            (
+                record_id,
+                session_id,
+                query_id,
+                node_name,
+                _safe_json(data),
+                user_id,
+                _now_iso(),
+            ),
+        )
+        logger.debug(
+            "telemetry.state_snapshot_logged",
+            query_id=query_id,
+            node_name=node_name,
+        )
+        return record_id
+
     # ─── Query Methods (for Admin/Debug) ───────────────
 
     async def get_query_log(self, query_id: str) -> Optional[dict]:
@@ -708,7 +808,7 @@ class TelemetryService:
             Dict mapping table name to row count.
         """
         counts: dict[str, int] = {}
-        for table in ("query_logs", "node_executions", "llm_calls", "errors"):
+        for table in ("query_logs", "node_executions", "llm_calls", "errors", "conversation_history", "logs"):
             rows = await self._execute_read_all(
                 f"SELECT COUNT(*) FROM [{table}]"
             )

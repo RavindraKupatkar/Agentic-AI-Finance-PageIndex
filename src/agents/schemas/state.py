@@ -59,6 +59,7 @@ class PageIndexQueryState(TypedDict):
     sub_results: list[dict]                             # Results from sub-queries
 
     # ─── Document Selection ────────────────────────────
+    scoped_doc_ids: Optional[list[str]]                 # If set, restrict search to ONLY these doc_ids (from conversation)
     available_docs: list[dict]                          # All indexed doc metadata
     selected_doc_ids: list[str]                         # Docs chosen for search
 
@@ -215,6 +216,7 @@ def create_initial_query_state(
     thread_id: str = "default",
     user_id: Optional[str] = None,
     query_id: Optional[str] = None,
+    scoped_doc_ids: Optional[list[str]] = None,
 ) -> PageIndexQueryState:
     """
     Create initial state for a new PageIndex query.
@@ -239,6 +241,7 @@ def create_initial_query_state(
         plan=None,
         current_step=0,
         sub_results=[],
+        scoped_doc_ids=scoped_doc_ids,
         available_docs=[],
         selected_doc_ids=[],
         tree_structures={},

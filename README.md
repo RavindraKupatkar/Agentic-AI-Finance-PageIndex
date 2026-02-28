@@ -1,249 +1,113 @@
-# 🚀 LangGraph RAG System
+# FinSight - Agentic Finance Document RAG
+> **An Awwwards-winning enterprise platform for deep financial document analysis.**
 
-> **Production-Grade Document Q&A with SOLID Principles**
+Upload lengthy financial PDFs, interim reports, and annual reviews, and let an advanced hierarchical Agentic LangGraph engine extract, synthesize, and compare complex financial data instantly.
 
-Upload PDF → Ask Questions → Get AI Answers
+---
+
+## 🚀 Features
+
+- **Awwwards-Winning UI/UX:** Built with Next.js, Framer Motion, and Tailwind CSS. Features an immersive dark mode, orbital glowing animations, liquid mesh backgrounds, and a beautiful chat interface.
+- **PageIndex Architecture:** Unlike traditional dumb chunking (Vector RAG), FinSight uses an LLM to build a hierarchical semantic tree (Table of Contents) of every document.
+- **Agentic LangGraph Orchestrator:**
+  - **Router:** Automatically classifies query complexity.
+  - **Doc Selector:** Smartly filters which documents to search.
+  - **Continuous Planner (Multi-Hop):** Breaks complex cross-document comparisons into sequential reasoning steps.
+  - **Tree Searcher:** Navigates the document trees starting from the root to extract precise financial clauses.
+  - **Critic:** Evaluates findings and triggers targeted re-retrieval if the answer lacks confidence.
+  - **Generator:** Synthesizes the final answer with strict source citations.
+- **Output Guardrails:** Automatically blocks prompt injection and appends required financial disclaimers.
 
 ---
 
 ## 📊 Architecture & Design
 
-![PageIndex Finance RAG Architecture](docs/PageIndex_Finance_RAG_Architecture.png)
+### 🧠 Agentic Flow
+![Query Flow Diagram](docs/query_flow_diagram.png)
 
-### 🧠 Concepts
-![PageIndex Concepts](docs/PageIndex_Concepts.png)
+*The system uses LangGraph to orchestrate multiple LLM agents (Router, Planner, Critic, Generator) working together to resolve complex queries.*
 
-### 📥 Ingestion Flow
-![PageIndex Ingestion Flow](docs/PageIndex_Ingestion_Flow.png)
-
-### ❓ Query Flow
-![PageIndex Query Flow](docs/PageIndex_Query_Flow.png)
-
-## 📁 Project Structure
-
-```
-capstone_project/
-├── streamlit_app/
-│   ├── __init__.py
-│   ├── app.py                 # 🌐 Streamlit web interface
-│   └── logger.py              # 📊 SQLite logging system
-├── src/
-│   ├── __init__.py
-│   ├── config.py              # ⚙️ Centralized configuration
-│   ├── main.py                # 🖥️ CLI entry point
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── state.py           # 📊 RAGState TypedDict
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── pdf_service.py     # 📄 PDF extraction
-│   │   ├── embedding_service.py  # 🔢 Embeddings
-│   │   ├── vector_store.py    # 🗄️ ChromaDB
-│   │   ├── llm_service.py     # 🧠 Groq LLM
-│   │   └── response_generator.py  # 🤖 Response Generator Agent
-│   └── graphs/
-│       ├── __init__.py
-│       ├── nodes.py           # 🔧 Node functions
-│       ├── ingestion_graph.py # 📥 Ingestion StateGraph
-│       └── query_graph.py     # ❓ Query StateGraph
-├── data/                      # 📂 PDF files
-├── tests/                     # 🧪 Unit tests
-├── docs/
-│   └── ARCHITECTURE.md        # 📐 Architecture diagrams
-├── .env.example
-├── requirements.txt
-└── README.md
-```
+---
 
 ## 🛠️ Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| **UI Framework** | Streamlit (Web Interface) |
-| **Graph Framework** | LangGraph (StateGraph) |
-| **PDF Processing** | PyPDF |
-| **Embeddings** | Sentence-Transformers (`all-MiniLM-L6-v2`) |
-| **Vector Store** | ChromaDB (persistent) |
-| **LLM** | Groq (`llama-3.1-70b-versatile`) |
-| **Logging** | SQLite (node execution tracking) |
-| **Checkpointing** | LangGraph MemorySaver |
-
-## 🚀 Quick Start
-
-### 1. Install Dependencies
-
-```bash
-cd capstone_project_day_02
-pip install -r requirements.txt
-```
-
-### 2. Configure API Key
-
-```bash
-cp .env.example .env
-# Edit .env and add your GROQ_API_KEY
-```
-
-### 3. Run the Application
-
-**Option A: Streamlit UI (Recommended)**
-```bash
-streamlit run streamlit_app/app.py
-```
-- 📄 Upload PDFs via drag & drop
-- 💬 Interactive query interface  
-- 📊 Real-time node execution logs
-- 💾 SQLite-persisted metadata
-
-**Option B: Command Line**
-```bash
-# Ingest a document
-python main.py ingest data/document.pdf
-
-# Ask questions
-python main.py query "What is this about?"
-```
-
-### 4. Example: Streamlit UI
-
-**Output:**
-```
-════════════════════════════════════════════════════════════
-📁 INGESTING: data/document.pdf
-════════════════════════════════════════════════════════════
-  📝 Extracted 15,234 characters
-  ✂️  Created 23 chunks
-  🔢 Generated 23 embeddings
-  💾 Stored 23 chunks in ChromaDB
-════════════════════════════════════════════════════════════
-✅ Ingested 23 chunks from document.pdf
-```
-
-### 4. Ask Questions
-
-```bash
-python main.py query "What is the main topic of this document?"
-```
-
-**Output:**
-```
-════════════════════════════════════════════════════════════
-❓ QUESTION: What is the main topic of this document?
-════════════════════════════════════════════════════════════
-  🔢 Embedded question
-  🔍 Retrieved 5 relevant chunks
-  🤖 Response Generator Agent
-     ├─ 🎯 Confidence: 0.80
-     ├─ 📚 Sources Used: 5 chunks
-     └─ ⏱️  Response Time: 2.3s
-────────────────────────────────────────────────────────────
-✅ ANSWER:
-The main topic of this document is...
-════════════════════════════════════════════════════════════
-```
-
-### 5. Check Status
-
-```bash
-python main.py status
-```
-
-## 🧱 SOLID Principles
-
-| Principle | Implementation |
-|-----------|----------------|
-| **S**ingle Responsibility | Each service handles one concern |
-| **O**pen/Closed | Config dataclasses, extensible services |
-| **L**iskov Substitution | Swappable embedding/LLM providers |
-| **I**nterface Segregation | Focused service interfaces |
-| **D**ependency Inversion | Services depend on config abstraction |
-
-## 🔄 LangGraph Graphs
-
-### Ingestion Graph
-```
-START → extract_text → chunk_text → embed_chunks → store_chunks → END
-```
-
-### Query Graph (with Memory)
-```
-START → embed_question → retrieve_chunks → response_generator_agent → END
-                                                     🤖
-                                          (Intelligent Response Agent)
-                                                     │
-                                            [Metrics & Confidence]
-                                                     │
-                                              [MemorySaver]
-```
-
-## 📦 Services
-
-| Service | Responsibility |
-|---------|---------------|
-| `PDFService` | Extract text from PDF, chunk text |
-| `EmbeddingService` | Generate text embeddings (singleton) |
-| `VectorStoreService` | ChromaDB CRUD operations (singleton) |
-| `LLMService` | Low-level LLM API calls (singleton) |
-| `ResponseGeneratorService` | 🤖 Intelligent response generation with metrics & confidence |
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific test
-pytest tests/test_services.py -v
-```
-
-## 📚 Python API
-
-```python
-from src.graphs import ingest_pdf, ask_question
-
-# Ingest a document
-result = ingest_pdf("data/report.pdf")
-print(result)  # ✅ Ingested 45 chunks from report.pdf
-
-# Ask questions with conversation memory
-answer = ask_question(
-    "What are the key findings?",
-    thread_id="session_001"
-)
-print(answer)
-```
-
-## ⚙️ Configuration
-
-All settings in `src/config.py`:
-
-```python
-# Chunking
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 200
-
-# Embeddings
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-
-# Retrieval
-TOP_K = 5
-
-# LLM
-LLM_MODEL = "llama-3.1-70b-versatile"
-TEMPERATURE = 0.3
-```
-
-## 📐 Architecture Diagrams
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for detailed Mermaid diagrams including:
-- System Overview
-- Ingestion Graph Flow
-- Query Graph Flow
-- Data Flow Sequence
-- SOLID Principles Mindmap
+| **Frontend Framework** | Next.js 14 (App Router) + React 18 |
+| **Frontend Styling** | Tailwind CSS + Framer Motion |
+| **Backend API** | FastAPI (Python 3.11) |
+| **AI Orchestration** | LangGraph + LangChain |
+| **LLM Provider** | Groq (`llama-3.1-8b-instant` / `llama-3.3-70b-versatile`) |
+| **Document Processing**| PyMuPDF (Text & TOC extraction) |
+| **Analytics Log** | SQLite Telemetry Database |
 
 ---
 
-**Built for ADCET Agentic AI Workshop - Day 2 Capstone Project**
+## 🏁 Quick Start: Local Development
 
-*Framework: LangGraph | LLM: Groq | Vector Store: ChromaDB*
+### 1. Backend Setup (FastAPI + LangGraph)
+
+```bash
+# Clone the repository and navigate to the backend
+cd "Finance RAG"
+
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure Environment Variables
+cp .env.example .env
+# Edit .env and insert your GROQ_API_KEY
+```
+
+**Start the Backend Server:**
+```bash
+python main.py server
+```
+*The backend will be available at `http://localhost:8000/api/v1`*
+
+### 2. Frontend Setup (Next.js)
+
+```bash
+# Open a new terminal and navigate to the frontend
+cd "Finance RAG/finsight-frontend"
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+*The frontend will be available at `http://localhost:3000`*
+
+---
+
+## 🧪 Testing
+
+The platform includes a comprehensive, production-ready test suite designed to push the LangGraph nodes to their limits.
+
+```bash
+# Make sure the FastAPI server is running in the background first
+python main.py server
+
+# Open a new terminal and run the test suite
+python test_comprehensive.py
+```
+
+**The test suite validates:**
+1. **Functional Paths:** System health and tree generation.
+2. **Stress Load:** Concurrent API calls and rapid-fire queries.
+3. **Penetration Scenarios:** SQL Injection, prompt leaking, and massive payload rejection.
+4. **RAG Evaluation Metrics (LLM-as-Judge):** Faithfulness, Relevancy, Hallucination monitoring.
+5. **Guardrails:** Output validation and financial PII masking. 
+
+*Results are automatically exported to `comprehensive_test_report.md`.*
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License.

@@ -267,10 +267,8 @@ class TreeStore:
             doc_id: Unique document identifier.
 
         Returns:
-            DocumentTree if found, None if not indexed.
-
-        Raises:
-            IOError: If the JSON file exists in DB but can't be read.
+            DocumentTree if found, None if not indexed or if the
+            underlying JSON file was deleted (stale entry auto-cleaned).
         """
         if not doc_id:
             raise ValueError("doc_id must be a non-empty string")
@@ -282,15 +280,19 @@ class TreeStore:
 
         tree_path = Path(metadata.tree_path)
         if not tree_path.exists():
-            logger.error(
-                "tree_store.load_tree.json_missing",
+            # ── Auto-clean stale metadata entry ──
+            logger.warning(
+                "tree_store.load_tree.json_missing.auto_cleanup",
                 doc_id=doc_id,
                 expected_path=str(tree_path),
             )
-            raise IOError(
-                f"Tree JSON file missing for {doc_id}: {tree_path}. "
-                f"Metadata exists in SQLite but JSON file was deleted."
+            self._execute_write(_DELETE_BY_ID_SQL, (doc_id,))
+            logger.info(
+                "tree_store.stale_entry_removed",
+                doc_id=doc_id,
+                reason="JSON file missing on disk",
             )
+            return None
 
         try:
             json_content = tree_path.read_text(encoding="utf-8")
@@ -329,15 +331,40 @@ class TreeStore:
             return None
         return self._row_to_metadata(row)
 
-    def list_documents(self) -> list[DocumentMetadata]:
+    def list_documents(self, validate: bool = False) -> list[DocumentMetadata]:
         """
         List all indexed documents with their metadata.
+
+        Args:
+            validate: If True, filters out documents whose tree JSON
+                      files no longer exist on disk (stale entries).
+                      Stale entries are automatically cleaned up.
 
         Returns:
             List of DocumentMetadata records, ordered by created_at descending.
         """
         rows = self._execute_read_all(_SELECT_ALL_SQL)
         documents = [self._row_to_metadata(row) for row in rows]
+
+        if validate:
+            valid_docs = []
+            for doc in documents:
+                tree_path = Path(doc.tree_path)
+                if tree_path.exists():
+                    valid_docs.append(doc)
+                else:
+                    logger.warning(
+                        "tree_store.list_documents.stale_entry",
+                        doc_id=doc.doc_id,
+                        missing_path=str(tree_path),
+                    )
+                    self._execute_write(_DELETE_BY_ID_SQL, (doc.doc_id,))
+                    logger.info(
+                        "tree_store.stale_entry_removed",
+                        doc_id=doc.doc_id,
+                        reason="JSON file missing on disk (list_documents validate)",
+                    )
+            documents = valid_docs
 
         logger.debug(
             "tree_store.list_documents",
@@ -405,9 +432,40 @@ class TreeStore:
         """
         return self.get_metadata(doc_id) is not None
 
+    def purge_stale_entries(self) -> int:
+        """
+        Scan all metadata rows and remove any whose tree JSON file
+        no longer exists on disk.
+
+        Returns:
+            Number of stale entries removed.
+        """
+        all_docs = self.list_documents(validate=False)
+        removed = 0
+        for doc in all_docs:
+            tree_path = Path(doc.tree_path)
+            if not tree_path.exists():
+                self._execute_write(_DELETE_BY_ID_SQL, (doc.doc_id,))
+                logger.info(
+                    "tree_store.purge_stale_entries.removed",
+                    doc_id=doc.doc_id,
+                    filename=doc.filename,
+                    missing_path=str(tree_path),
+                )
+                removed += 1
+        if removed:
+            logger.warning(
+                "tree_store.purge_stale_entries.complete",
+                removed=removed,
+                remaining=len(all_docs) - removed,
+            )
+        return removed
+
     def health_check(self) -> bool:
         """
         Check if the tree store is healthy and accessible.
+
+        Also purges any stale metadata entries on startup.
 
         Returns:
             True if storage directory exists and SQLite is accessible.
@@ -417,6 +475,8 @@ class TreeStore:
                 return False
             # Test SQLite connectivity
             self.get_document_count()
+            # Purge stale entries on health check
+            self.purge_stale_entries()
             return True
         except Exception as exc:
             logger.error(

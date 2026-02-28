@@ -64,12 +64,31 @@ async def select_documents(
     )
 
     try:
-        # Load all document metadata from TreeStore
-        all_docs = deps.tree_store.list_documents()
+        # Load all document metadata from TreeStore (validate=True
+        # automatically purges entries whose JSON files are missing)
+        all_docs = deps.tree_store.list_documents(validate=True)
+
+        # ── Conversation-scoped filtering ──────────────────────────
+        # If the query came from a conversation with attached documents,
+        # ONLY search those specific documents (not the entire library).
+        scoped_doc_ids = state.get("scoped_doc_ids")
+        if scoped_doc_ids:
+            scoped_set = set(scoped_doc_ids)
+            all_docs = [d for d in all_docs if d.doc_id in scoped_set]
+            logger.info(
+                "doc_selector.scoped_filter_applied",
+                scoped_doc_ids=scoped_doc_ids,
+                docs_after_filter=len(all_docs),
+            )
 
         if not all_docs:
             duration_ms = (time.time() - start_time) * 1000
-            logger.warning("doc_selector.no_documents")
+            error_msg = (
+                "No matching documents found for this conversation."
+                if scoped_doc_ids
+                else "No documents indexed. Please ingest documents first."
+            )
+            logger.warning("doc_selector.no_documents", scoped=bool(scoped_doc_ids))
             await deps.telemetry.log_node_end(
                 node_execution_id=node_exec_id,
                 query_id=state.get("query_id", ""),
@@ -81,7 +100,7 @@ async def select_documents(
                 "available_docs": [],
                 "selected_doc_ids": [],
                 "tree_structures": {},
-                "error": "No documents indexed. Please ingest documents first.",
+                "error": error_msg,
             }
 
         available_docs = [
@@ -134,16 +153,36 @@ async def select_documents(
             selected_ids = _parse_selected_ids(response, available_docs)
 
         # Load tree structures for selected documents
+        # Gracefully skip documents whose trees can't be loaded
         tree_structures: dict = {}
+        failed_ids: list[str] = []
         for doc_id in selected_ids:
-            tree_data = deps.tree_store.load_tree(doc_id)
-            if tree_data:
-                # Store as dict for LangGraph state serialization
-                tree_structures[doc_id] = (
-                    tree_data.to_dict()
-                    if hasattr(tree_data, "to_dict")
-                    else tree_data
+            try:
+                tree_data = deps.tree_store.load_tree(doc_id)
+                if tree_data:
+                    tree_structures[doc_id] = (
+                        tree_data.to_dict()
+                        if hasattr(tree_data, "to_dict")
+                        else tree_data
+                    )
+                else:
+                    logger.warning(
+                        "doc_selector.tree_load_skipped",
+                        doc_id=doc_id,
+                        reason="load_tree returned None (stale entry cleaned)",
+                    )
+                    failed_ids.append(doc_id)
+            except Exception as load_exc:
+                logger.warning(
+                    "doc_selector.tree_load_failed",
+                    doc_id=doc_id,
+                    error=str(load_exc),
                 )
+                failed_ids.append(doc_id)
+
+        # Remove failed doc_ids from the selected list
+        if failed_ids:
+            selected_ids = [d for d in selected_ids if d not in failed_ids]
 
         duration_ms = (time.time() - start_time) * 1000
 
@@ -155,6 +194,7 @@ async def select_documents(
                 "available": len(available_docs),
                 "selected": len(selected_ids),
                 "selected_ids": selected_ids,
+                "skipped": len(failed_ids),
             },
             duration_ms=duration_ms,
         )
@@ -164,6 +204,7 @@ async def select_documents(
             available=len(available_docs),
             selected=len(selected_ids),
             selected_ids=selected_ids,
+            skipped=failed_ids if failed_ids else None,
         )
 
         return {

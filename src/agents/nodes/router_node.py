@@ -128,8 +128,13 @@ def _compute_complexity_heuristics(question: str) -> float:
     elif len(question) > 100:
         score += 0.1
 
-    multi_part_words = ["and", "also", "additionally", "compare", "contrast", "versus"]
+    multi_part_words = ["compare", "contrast", "versus", "difference between", "all attached files"]
     for word in multi_part_words:
+        if word in question.lower():
+            score += 0.8  # Immediate complex trigger
+
+    multi_part_and = ["and", "also", "additionally"]
+    for word in multi_part_and:
         if word in question.lower():
             score += 0.15
 

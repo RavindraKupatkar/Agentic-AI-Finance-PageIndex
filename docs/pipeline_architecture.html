@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated SVG RAG Pipeline Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: #f9fafb;
+            display: flex;
+            justify-content: center;
+            padding: 50px;
+        }
+
+        #canvas-wrapper {
+            width: 800px;
+            height: 1100px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+            position: relative;
+            overflow: hidden;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Node Text Styling */
+        .txt-title {
+            font-size: 13px;
+            font-weight: 600;
+            fill: #1f2937;
+            text-anchor: middle;
+            alignment-baseline: middle;
+        }
+
+        .txt-title-white {
+            font-size: 13px;
+            font-weight: 600;
+            fill: #fff;
+            text-anchor: middle;
+            alignment-baseline: middle;
+        }
+
+        .txt-sub {
+            font-size: 10px;
+            font-weight: 500;
+            fill: #6b7280;
+            text-anchor: middle;
+            alignment-baseline: middle;
+        }
+
+        .txt-sub-red {
+            font-size: 10px;
+            font-weight: 500;
+            fill: #9f1239;
+            text-anchor: middle;
+            alignment-baseline: middle;
+        }
+
+        .txt-header {
+            font-size: 22px;
+            font-weight: 700;
+            fill: #111827;
+        }
+
+        .group-lbl {
+            font-size: 12px;
+            font-weight: 700;
+            fill: #64748b;
+            letter-spacing: 1px;
+            text-anchor: middle;
+        }
+
+        .edge-lbl {
+            font-size: 11px;
+            font-weight: 600;
+            fill: #64748b;
+            text-anchor: middle;
+            alignment-baseline: middle;
+        }
+
+        /* Edge Styling */
+        .edge-line {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2px;
+            stroke-linejoin: round;
+        }
+
+        .group-box {
+            fill: rgba(248, 250, 252, 0.6);
+            stroke: #cbd5e1;
+            stroke-width: 1.5px;
+            stroke-dasharray: 6, 4;
+            rx: 8px;
+        }
+
+        /* Interactive Hover */
+        .node-rect {
+            transition: filter 0.2s;
+            cursor: pointer;
+        }
+
+        .node-rect:hover {
+            filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1));
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-wrapper">
+        <svg viewBox="0 0 800 1100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Drop Shadow for nodes -->
+                <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.05" />
+                </filter>
+
+                <!-- Glow for data packets -->
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                    <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+
+                <!-- Arrow Markers -->
+                <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                </marker>
+
+                <!-- Node Box Template -->
+                <g id="node-gray">
+                    <rect x="-50" y="-25" width="100" height="50" rx="25" fill="#f3f4f6" stroke="#d1d5db"
+                        stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+                </g>
+                <g id="node-red">
+                    <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#ffe4e6" stroke="#fecdd3"
+                        stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+                </g>
+                <g id="node-blue">
+                    <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#dbeafe" stroke="#bfdbfe"
+                        stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+                </g>
+                <g id="node-cyan">
+                    <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#cffafe" stroke="#a5f3fc"
+                        stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+                </g>
+                <g id="node-green">
+                    <rect x="-60" y="-25" width="120" height="50" rx="8" fill="#dcfce7" stroke="#bbf7d0"
+                        stroke-width="1.5" filter="url(#shadow)" class="node-rect" />
+                </g>
+
+                <g id="diamond-purple">
+                    <polygon points="0,-40 40,0 0,40 -40,0" fill="#e9d5ff" stroke="#d8b4fe" stroke-width="2"
+                        filter="url(#shadow)" class="node-rect" />
+                </g>
+                <g id="diamond-yellow">
+                    <polygon points="0,-40 40,0 0,40 -40,0" fill="#fef08a" stroke="#fde047" stroke-width="2"
+                        filter="url(#shadow)" class="node-rect" />
+                </g>
+
+                <g id="edge-tag-border">
+                    <rect x="-35" y="-10" width="70" height="20" rx="10" fill="#fff" stroke="#e2e8f0"
+                        stroke-width="1" />
+                </g>
+                <g id="edge-tag-border-lg">
+                    <rect x="-45" y="-10" width="90" height="20" rx="10" fill="#fff" stroke="#e2e8f0"
+                        stroke-width="1" />
+                </g>
+            </defs>
+
+            <!-- Title -->
+            <text x="30" y="45" class="txt-header">RAG Pipeline Flow</text>
+
+            <!-- Background Groups -->
+            <rect class="group-box" x="170" y="270" width="460" height="390" />
+            <text x="400" y="645" class="group-lbl">RETRIEVAL CORE</text>
+
+            <rect class="group-box" x="230" y="680" width="340" height="210" />
+            <text x="400" y="875" class="group-lbl">EVAL &amp; GENERATION</text>
+
+            <!-- Paths Definition for Edges -->
+            <g class="edge-line">
+                <!-- Basic linear paths -->
+                <path id="p1" d="M 400 125 L 400 155" marker-end="url(#arr)" />
+                <path id="p2" d="M 400 205 L 400 230" marker-end="url(#arr)" />
+
+                <!-- Router Branches -->
+                <path id="p3_complex" d="M 360 270 L 250 270 L 250 315" marker-end="url(#arr)" />
+                <path id="p3_standard" d="M 440 270 L 550 270 L 550 415" marker-end="url(#arr)" />
+
+                <!-- Left Branch internal -->
+                <path id="p4_complex" d="M 250 365 L 250 415" marker-end="url(#arr)" />
+
+                <!-- Merge to Tree Search -->
+                <path id="p5_complex_merge" d="M 250 465 L 250 510 L 390 510" marker-end="url(#arr)" />
+                <path id="p5_standard_merge" d="M 550 465 L 550 510 L 410 510" marker-end="url(#arr)" />
+
+                <!-- Tree Search to Retrieve -->
+                <path id="p6_tree_to_page" d="M 400 535 L 400 585" marker-end="url(#arr)" />
+
+                <!-- Retrieve to Critic -->
+                <path id="p7_page_to_critic" d="M 400 635 L 400 680" marker-end="url(#arr)" />
+
+                <!-- Critic to Generator (Pass) -->
+                <path id="p8_critic_pass" d="M 400 760 L 400 805" marker-end="url(#arr)" />
+
+                <!-- Critic Retry Loop -->
+                <path id="p9_critic_retry" d="M 440 720 L 650 720 L 650 510 L 410 510" marker-end="url(#arr)" />
+
+                <!-- End paths -->
+                <path id="p10_gen_to_guard" d="M 400 855 L 400 905" marker-end="url(#arr)" />
+                <path id="p11_guard_to_res" d="M 400 955 L 400 1005" marker-end="url(#arr)" />
+            </g>
+
+            <!-- Static Edge Labels -->
+            <g transform="translate(290, 270)">
+                <use href="#edge-tag-border" />
+                <text class="edge-lbl">Complex</text>
+            </g>
+            <g transform="translate(510, 270)">
+                <use href="#edge-tag-border" />
+                <text class="edge-lbl">Standard</text>
+            </g>
+            <g transform="translate(435, 765)">
+                <use href="#edge-tag-border" />
+                <text class="edge-lbl">Pass</text>
+            </g>
+            <g transform="translate(650, 610)">
+                <use href="#edge-tag-border-lg" />
+                <text class="edge-lbl">Retry Search</text>
+            </g>
+
+            <!-- Node Placements -->
+            <!-- User Query -->
+            <g transform="translate(400, 100)">
+                <use href="#node-gray" />
+                <text class="txt-title">User Query</text>
+            </g>
+
+            <!-- Input Guardrail -->
+            <g transform="translate(400, 180)">
+                <use href="#node-red" />
+                <text y="-5" class="txt-title" style="fill:#9f1239">Input Guardrails</text>
+                <text y="10" class="txt-sub-red">Validation/Safeguard</text>
+            </g>
+
+            <!-- Router -->
+            <g transform="translate(400, 270)">
+                <use href="#diamond-purple" />
+                <text class="txt-title" style="fill:#581c87">Router</text>
+            </g>
+
+            <!-- Left Branch (Complex) - Planner -->
+            <g transform="translate(250, 340)">
+                <use href="#node-blue" />
+                <text y="-8" class="txt-title" style="fill:#1e3a8a">Planner</text>
+                <text y="8" class="txt-sub" style="fill:#1e3a8a">Decompose</text>
+            </g>
+
+            <!-- Left Branch - Doc Selector -->
+            <g transform="translate(250, 440)">
+                <use href="#node-cyan" />
+                <text y="-8" class="txt-title" style="fill:#164e63">Doc Selector</text>
+                <text y="8" class="txt-sub" style="fill:#164e63">Filter Relevant</text>
+            </g>
+
+            <!-- Right Branch (Standard) - Doc Selector -->
+            <g transform="translate(550, 440)">
+                <use href="#node-cyan" />
+                <text y="-8" class="txt-title" style="fill:#164e63">Doc Selector</text>
+                <text y="8" class="txt-sub" style="fill:#164e63">Filter Relevant</text>
+            </g>
+
+            <!-- Merge: Tree Search -->
+            <g transform="translate(400, 510)">
+                <use href="#node-cyan" />
+                <text y="-8" class="txt-title" style="fill:#164e63">Tree Search</text>
+                <text y="8" class="txt-sub" style="fill:#164e63">Node traversal</text>
+            </g>
+
+            <!-- Page Retrieve -->
+            <g transform="translate(400, 610)">
+                <use href="#node-cyan" />
+                <text y="-8" class="txt-title" style="fill:#164e63">Page Retrieve</text>
+                <text y="8" class="txt-sub" style="fill:#164e63">Extract snippets</text>
+            </g>
+
+            <!-- Critic -->
+            <g transform="translate(400, 720)">
+                <use href="#diamond-yellow" />
+                <text class="txt-title" style="fill:#854d0e">Critic</text>
+            </g>
+
+            <!-- Generator -->
+            <g transform="translate(400, 830)">
+                <use href="#node-green" />
+                <text y="-8" class="txt-title" style="fill:#14532d">Generator</text>
+                <text y="8" class="txt-sub" style="fill:#14532d">Synthesize</text>
+            </g>
+
+            <!-- Output Guardrails -->
+            <g transform="translate(400, 930)">
+                <use href="#node-red" />
+                <text y="-5" class="txt-title" style="fill:#9f1239">Output Guardrails</text>
+                <text y="10" class="txt-sub-red">Filter &amp; Format</text>
+            </g>
+
+            <!-- Result -->
+            <g transform="translate(400, 1030)">
+                <use href="#node-gray" />
+                <text class="txt-title">Result</text>
+            </g>
+
+
+            <!-- ========================================== -->
+            <!-- ANIMATION PATHS & PULSES (DATA PACKETS)      -->
+            <!-- ========================================== -->
+            <defs>
+                <!-- Master animation paths (includes jumps 'M' over the nodes themselves) -->
+                <!-- Standard Flow -->
+                <path id="anim-standard"
+                    d="M 400 125 L 400 155 M 400 205 L 400 230 M 440 270 L 550 270 L 550 415 M 550 465 L 550 510 L 410 510 M 400 535 L 400 585 M 400 635 L 400 680 M 400 760 L 400 805 M 400 855 L 400 905 M 400 955 L 400 1005" />
+
+                <!-- Complex Flow -->
+                <path id="anim-complex"
+                    d="M 400 125 L 400 155 M 400 205 L 400 230 M 360 270 L 250 270 L 250 315 M 250 365 L 250 415 M 250 465 L 250 510 L 390 510 M 400 535 L 400 585 M 400 635 L 400 680 M 400 760 L 400 805 M 400 855 L 400 905 M 400 955 L 400 1005" />
+
+                <!-- Retry Loop Flow -->
+                <path id="anim-retry"
+                    d="M 400 535 L 400 585 M 400 635 L 400 680 M 440 720 L 650 720 L 650 510 L 410 510" />
+            </defs>
+
+            <!-- Packet 1: Standard Path (Blue, 4s cycle) -->
+            <circle r="5" fill="#3b82f6" filter="url(#glow)">
+                <animateMotion dur="4s" repeatCount="indefinite" calcMode="linear">
+                    <mpath href="#anim-standard" />
+                </animateMotion>
+            </circle>
+
+            <!-- Packet 2: Standard Path delayed for density -->
+            <circle r="5" fill="#3b82f6" filter="url(#glow)">
+                <animateMotion dur="4s" begin="2s" repeatCount="indefinite" calcMode="linear">
+                    <mpath href="#anim-standard" />
+                </animateMotion>
+            </circle>
+
+            <!-- Packet 3: Complex Path (Purple, 5s cycle) -->
+            <circle r="5" fill="#a855f7" filter="url(#glow)">
+                <animateMotion dur="5s" begin="0.8s" repeatCount="indefinite" calcMode="linear">
+                    <mpath href="#anim-complex" />
+                </animateMotion>
+            </circle>
+
+            <!-- Packet 4: Complex Path delayed -->
+            <circle r="5" fill="#a855f7" filter="url(#glow)">
+                <animateMotion dur="5s" begin="3.3s" repeatCount="indefinite" calcMode="linear">
+                    <mpath href="#anim-complex" />
+                </animateMotion>
+            </circle>
+
+            <!-- Packet 5: Retry Loop (Orange Warning, 3s cycle) -->
+            <circle r="5" fill="#f97316" filter="url(#glow)">
+                <animateMotion dur="3s" begin="1.5s" repeatCount="indefinite" calcMode="linear">
+                    <mpath href="#anim-retry" />
+                </animateMotion>
+            </circle>
+
+        </svg>
+    </div>
+
+</body>
+
+</html>

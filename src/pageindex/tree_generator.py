@@ -340,13 +340,33 @@ class TreeGenerator:
             page_texts: list[str] = pdf_structure["page_texts"]
             total_pages: int = pdf_structure["total_pages"]
             pdf_title: str = pdf_structure.get("title", "")
+            total_chars = sum(len(t) for t in page_texts)
+            pages_with_text = sum(1 for t in page_texts if t.strip())
 
             logger.info(
                 "tree_generator.pdf_extracted",
                 doc_id=doc_id,
                 total_pages=total_pages,
-                total_chars=sum(len(t) for t in page_texts),
+                total_chars=total_chars,
+                pages_with_text=pages_with_text,
             )
+
+            # ── Zero-text guard: detect image-only or corrupted PDFs ──
+            if total_chars == 0:
+                logger.warning(
+                    "tree_generator.zero_text_extraction",
+                    doc_id=doc_id,
+                    total_pages=total_pages,
+                    reason="No text extracted from any page. PDF may be image-only or have corrupted streams.",
+                )
+            elif pages_with_text < total_pages * 0.1:
+                logger.warning(
+                    "tree_generator.low_text_extraction",
+                    doc_id=doc_id,
+                    total_pages=total_pages,
+                    pages_with_text=pages_with_text,
+                    reason="Very few pages produced text. PDF may be mostly images.",
+                )
 
             # Step 2: Detect existing TOC
             toc = pdf_structure.get("toc", [])
@@ -379,6 +399,9 @@ class TreeGenerator:
                     "has_toc": len(toc) > 0,
                     "toc_entries": len(toc),
                     "generation_model": self._model,
+                    "text_extraction_chars": total_chars,
+                    "pages_with_text": pages_with_text,
+                    "is_image_only": total_chars == 0,
                 },
             )
 
@@ -428,51 +451,75 @@ class TreeGenerator:
         Now also extracts tables and appends them as markdown to each
         page's text, so the LLM sees table data when building the tree.
 
+        MuPDF stderr warnings (e.g., zlib decompression errors for
+        image-heavy PDFs) are suppressed to reduce log noise.
+
         Args:
             pdf_path: Absolute path to the PDF file.
 
         Returns:
             Dict with page_texts, total_pages, title, toc.
         """
+        import sys
+        import os
+
         page_texts: list[str] = []
         toc: list[list] = []
         title: str = ""
 
-        with fitz.open(pdf_path) as pdf_doc:
-            total_pages = len(pdf_doc)
+        # Suppress MuPDF's noisy stderr output (zlib errors for image-heavy PDFs)
+        # These are non-fatal warnings from MuPDF's C library that clutter logs
+        old_stderr = sys.stderr
+        try:
+            devnull = open(os.devnull, "w")
+            sys.stderr = devnull
+        except Exception:
+            devnull = None
 
-            # Extract metadata
-            metadata = pdf_doc.metadata or {}
-            title = metadata.get("title", "") or ""
+        try:
+            with fitz.open(pdf_path) as pdf_doc:
+                total_pages = len(pdf_doc)
 
-            # Extract TOC (bookmarks)
-            toc = pdf_doc.get_toc()
+                # Extract metadata
+                metadata = pdf_doc.metadata or {}
+                title = metadata.get("title", "") or ""
 
-            # Extract text + tables per page
-            for page_idx in range(total_pages):
-                page = pdf_doc[page_idx]
-                text = page.get_text("text").strip()
+                # Extract TOC (bookmarks)
+                toc = pdf_doc.get_toc()
 
-                # Extract tables and append as markdown
+                # Extract text + tables per page
+                for page_idx in range(total_pages):
+                    page = pdf_doc[page_idx]
+                    text = page.get_text("text").strip()
+
+                    # Extract tables and append as markdown
+                    try:
+                        found_tables = page.find_tables()
+                        if found_tables and found_tables.tables:
+                            table_markdowns = []
+                            for table in found_tables.tables:
+                                md = self._table_to_markdown_safe(table)
+                                if md:
+                                    table_markdowns.append(md)
+                            if table_markdowns:
+                                tables_section = (
+                                    "\n\n[TABLES ON THIS PAGE]\n"
+                                    + "\n\n".join(table_markdowns)
+                                )
+                                text = text + tables_section
+                    except Exception:
+                        # Table extraction failure is non-fatal
+                        pass
+
+                    page_texts.append(text)
+        finally:
+            # Restore stderr
+            sys.stderr = old_stderr
+            if devnull is not None:
                 try:
-                    found_tables = page.find_tables()
-                    if found_tables and found_tables.tables:
-                        table_markdowns = []
-                        for table in found_tables.tables:
-                            md = self._table_to_markdown_safe(table)
-                            if md:
-                                table_markdowns.append(md)
-                        if table_markdowns:
-                            tables_section = (
-                                "\n\n[TABLES ON THIS PAGE]\n"
-                                + "\n\n".join(table_markdowns)
-                            )
-                            text = text + tables_section
+                    devnull.close()
                 except Exception:
-                    # Table extraction failure is non-fatal
                     pass
-
-                page_texts.append(text)
 
         return {
             "page_texts": page_texts,
@@ -565,6 +612,7 @@ class TreeGenerator:
             model=self._model,
             max_tokens=4096,
             temperature=0.1,
+            response_format={"type": "json_object"},
             system_prompt=(
                 "You are a document analysis expert. Generate precise, "
                 "well-structured hierarchical tree indexes from documents. "

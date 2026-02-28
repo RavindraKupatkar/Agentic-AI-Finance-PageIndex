@@ -52,6 +52,36 @@ from src.agents.nodes.ingestion_nodes import (
     ingestion_error,
 )
 
+# ─── DI helper for snapshot logging ────────────────────
+from src.agents.schemas.injected import get_deps
+
+
+# ═══════════════════════════════════════════════════════════
+# SNAPSHOT LOGGING DECORATOR
+# ═══════════════════════════════════════════════════════════
+
+def with_snapshot_logging(node_name: str, node_func):
+    """Wrap a LangGraph node to log state snapshots after execution."""
+    async def wrapper(state, config):
+        result = await node_func(state, config)
+
+        deps = get_deps(config)
+        session_id = config.get("configurable", {}).get("thread_id", "default")
+
+        merged_state = {**state, **(result or {})}
+        sanitized_state = {k: v for k, v in merged_state.items() if k not in ("tree_structures", "page_contents", "available_docs")}
+
+        await deps.telemetry.log_state_snapshot(
+            session_id=session_id,
+            query_id=deps.query_id or "unknown",
+            node_name=node_name,
+            data=sanitized_state,
+        )
+        return result
+
+    wrapper.__name__ = f"{node_func.__name__}_with_logging"
+    return wrapper
+
 
 # ═══════════════════════════════════════════════════════════
 # CONDITIONAL EDGE FUNCTIONS — Query Graph
@@ -113,18 +143,18 @@ def build_query_graph(checkpointer=None) -> StateGraph:
     """
     graph = StateGraph(PageIndexQueryState)
 
-    # ─── Add nodes ─────────────────────────────────────
-    graph.add_node("input_guard", validate_input)
-    graph.add_node("error_response", create_error_response)
-    graph.add_node("router", classify_query)
-    graph.add_node("planner", create_plan)
-    graph.add_node("doc_selector", select_documents)
-    graph.add_node("tree_search", tree_search)
-    graph.add_node("page_retrieve", retrieve_pages)
-    graph.add_node("critic", evaluate_retrieval)
-    graph.add_node("generator", generate_response)
-    graph.add_node("fast_generator", generate_response_fast)
-    graph.add_node("output_guard", validate_output)
+    # ─── Add nodes (wrapped with snapshot logging) ─────
+    graph.add_node("input_guard", with_snapshot_logging("input_guard", validate_input))
+    graph.add_node("error_response", with_snapshot_logging("error_response", create_error_response))
+    graph.add_node("router", with_snapshot_logging("router", classify_query))
+    graph.add_node("planner", with_snapshot_logging("planner", create_plan))
+    graph.add_node("doc_selector", with_snapshot_logging("doc_selector", select_documents))
+    graph.add_node("tree_search", with_snapshot_logging("tree_search", tree_search))
+    graph.add_node("page_retrieve", with_snapshot_logging("page_retrieve", retrieve_pages))
+    graph.add_node("critic", with_snapshot_logging("critic", evaluate_retrieval))
+    graph.add_node("generator", with_snapshot_logging("generator", generate_response))
+    graph.add_node("fast_generator", with_snapshot_logging("fast_generator", generate_response_fast))
+    graph.add_node("output_guard", with_snapshot_logging("output_guard", validate_output))
 
     # ─── Entry point ───────────────────────────────────
     graph.set_entry_point("input_guard")

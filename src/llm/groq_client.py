@@ -95,7 +95,8 @@ class GroqClient:
         model: str = None,
         max_tokens: int = 1024,
         temperature: float = 0.1,
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        response_format: Optional[dict] = None
     ) -> str:
         """Generate a response asynchronously with rate-limit retry."""
         model = model or settings.default_llm_model
@@ -107,12 +108,16 @@ class GroqClient:
         
         for attempt in range(_MAX_RETRIES + 1):
             try:
-                response = await self.async_client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
+                kwargs = {
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature
+                }
+                if response_format:
+                    kwargs["response_format"] = response_format
+                    
+                response = await self.async_client.chat.completions.create(**kwargs)
                 return response.choices[0].message.content
             except Exception as exc:
                 if _is_rate_limit_error(exc) and attempt < _MAX_RETRIES:

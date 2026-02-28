@@ -200,12 +200,36 @@ async def query_documents(request: QueryRequest) -> QueryResponse:
 
         deps = await create_deps(query_id=query_id)
 
+        # Look up conversation-scoped documents (only search these)
+        scoped_doc_ids = None
+        if request.thread_id and request.thread_id != "default":
+            try:
+                from ...observability.conversations import get_conversation_service
+                conv_service = await get_conversation_service()
+                conv_data = await conv_service.get_conversation(request.thread_id)
+                if conv_data and conv_data.get("documents"):
+                    scoped_doc_ids = [
+                        d["doc_id"] for d in conv_data["documents"]
+                    ]
+                    logger.info(
+                        "query_endpoint.scoped_docs",
+                        thread_id=request.thread_id,
+                        scoped_doc_ids=scoped_doc_ids,
+                        count=len(scoped_doc_ids),
+                    )
+            except Exception as scope_exc:
+                logger.warning(
+                    "query_endpoint.scope_lookup_failed",
+                    error=str(scope_exc),
+                )
+
         # Create initial state
         initial_state = create_initial_query_state(
             question=request.question,
             thread_id=request.thread_id,
             user_id=request.user_id,
             query_id=query_id,
+            scoped_doc_ids=scoped_doc_ids,
         )
 
         # Import and run graph
@@ -231,6 +255,25 @@ async def query_documents(request: QueryRequest) -> QueryResponse:
             confidence=result.get("confidence"),
             query_type=result.get("query_type"),
             total_latency_ms=latency_ms,
+        )
+
+        metadata = {
+            "query_type": result.get("query_type", "standard"),
+            "confidence": result.get("confidence", 0.0),
+            "sources": result.get("sources", []),
+            "warnings": result.get("guardrail_warnings", []),
+            "relevance_score": result.get("relevance_score", 0.0),
+            "groundedness_score": result.get("groundedness_score", 0.0)
+        }
+
+        # Log conversation
+        await telemetry.log_conversation(
+            session_id=request.thread_id,
+            user_id=request.user_id,
+            user_message=request.question,
+            agent_response=result.get("answer", "No answer generated"),
+            duration_ms=latency_ms,
+            metadata=metadata,
         )
 
         # Build response
@@ -390,7 +433,7 @@ async def list_documents() -> list[DocumentInfo]:
     """📚 LIST — Get all indexed documents and their metadata."""
     try:
         deps = await create_deps()
-        docs = deps.tree_store.list_documents()
+        docs = deps.tree_store.list_documents(validate=True)
 
         return [
             DocumentInfo(
@@ -479,7 +522,7 @@ async def health_check() -> HealthResponse:
         # Check indexed documents
         try:
             deps = await create_deps()
-            docs = deps.tree_store.list_documents()
+            docs = deps.tree_store.list_documents(validate=True)
             doc_count = len(docs)
         except Exception:
             doc_count = 0
@@ -517,7 +560,7 @@ async def get_page_content(doc_id: str, page_num: int) -> dict:
         deps = await create_deps()
 
         # Find the document filename
-        docs = deps.tree_store.list_documents()
+        docs = deps.tree_store.list_documents(validate=True)
         target_doc = None
         for doc in docs:
             if doc.doc_id == doc_id:

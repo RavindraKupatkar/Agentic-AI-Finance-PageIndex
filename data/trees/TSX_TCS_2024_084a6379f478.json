@@ -1,0 +1,139 @@
+{
+  "doc_id": "TSX_TCS_2024_084a6379f478",
+  "filename": "TSX_TCS_2024.pdf",
+  "title": "Tecsys Annual Report 2024",
+  "description": "Annual report of Tecsys Inc. covering financial highlights, management discussion, and analysis.",
+  "total_pages": 96,
+  "root_nodes": [
+    {
+      "title": "Contents",
+      "node_id": "L0_N0_Contents",
+      "start_page": 1,
+      "end_page": 2,
+      "summary": "List of contents and page numbers.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Management Messages",
+          "node_id": "L1_N0_Management_Messages",
+          "start_page": 1,
+          "end_page": 2,
+          "summary": "Messages from the Executive Chairman and President and CEO.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Company Overview",
+      "node_id": "L0_N1_Company_Overview",
+      "start_page": 3,
+      "end_page": 13,
+      "summary": "Overview of Tecsys as a global provider of advanced cloud-based supply chain solutions.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Tecsys Solutions",
+          "node_id": "L1_N0_Tecsys_Solutions",
+          "start_page": 3,
+          "end_page": 13,
+          "summary": "Description of Tecsys' solutions for enterprise resource planning, warehouse management, and more.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Financial Highlights",
+      "node_id": "L0_N2_Financial_Highlights",
+      "start_page": 14,
+      "end_page": 27,
+      "summary": "Financial highlights of Tecsys Inc.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Management's Discussion and Analysis",
+          "node_id": "L1_N0_Management's_Discuss",
+          "start_page": 14,
+          "end_page": 27,
+          "summary": "Discussion and analysis of Tecsys' financial performance.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Audit and Financial Statements",
+      "node_id": "L0_N3_Audit_and_Financial_",
+      "start_page": 28,
+      "end_page": 50,
+      "summary": "Audit report and financial statements of Tecsys Inc.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Audit Opinion",
+          "node_id": "L1_N0_Audit_Opinion",
+          "start_page": 28,
+          "end_page": 48,
+          "summary": "Opinion on the financial statements of Tecsys Inc.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Audit Procedures",
+          "node_id": "L1_N1_Audit_Procedures",
+          "start_page": 49,
+          "end_page": 50,
+          "summary": "Description of audit procedures performed.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "title": "Corporate Information",
+      "node_id": "L0_N4_Corporate_Informatio",
+      "start_page": 51,
+      "end_page": 96,
+      "summary": "Contact information and corporate details of Tecsys Inc.",
+      "level": 0,
+      "children": [
+        {
+          "title": "Auditors and Bankers",
+          "node_id": "L1_N0_Auditors_and_Bankers",
+          "start_page": 51,
+          "end_page": 53,
+          "summary": "Contact information of auditors and bankers.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Legal Counsel and Transfer Agent",
+          "node_id": "L1_N1_Legal_Counsel_and_Tr",
+          "start_page": 54,
+          "end_page": 55,
+          "summary": "Contact information of legal counsel and transfer agent.",
+          "level": 1,
+          "children": []
+        },
+        {
+          "title": "Corporate Headquarters and Offices",
+          "node_id": "L1_N2_Corporate_Headquarte",
+          "start_page": 56,
+          "end_page": 96,
+          "summary": "Contact information of Tecsys' corporate headquarters and offices.",
+          "level": 1,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "has_toc": false,
+    "toc_entries": 0,
+    "generation_model": "llama-3.1-8b-instant",
+    "text_extraction_chars": 261482,
+    "pages_with_text": 96,
+    "is_image_only": false
+  }
+}
