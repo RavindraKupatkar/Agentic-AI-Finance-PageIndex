@@ -140,6 +140,7 @@ class HealthResponse(BaseModel):
     telemetry_db: str = ""
     indexed_documents: int = 0
     groq_status: str = "unknown"
+    build_version: str = "2026-03-01-v7"
 
 
 class TelemetryQueryLog(BaseModel):
@@ -251,6 +252,21 @@ async def query_documents(
         result = await graph.ainvoke(initial_state, config)
 
         latency_ms = (time.time() - start_time) * 1000
+
+        # Diagnostic logging — trace what the pipeline produced
+        logger.info(
+            "query_endpoint.pipeline_result",
+            clerk_user_id=clerk_user_id,
+            has_context=bool(result.get("context")),
+            context_length=len(result.get("context", "")),
+            page_count=len(result.get("page_contents", [])),
+            selected_doc_ids=result.get("selected_doc_ids", []),
+            available_docs_count=len(result.get("available_docs", [])),
+            search_confidence=result.get("search_confidence"),
+            relevant_pages=result.get("relevant_pages", {}),
+            error=result.get("error"),
+            latency_ms=round(latency_ms, 1),
+        )
 
         # Log completion
         await telemetry.complete_query(
@@ -586,6 +602,7 @@ async def health_check() -> HealthResponse:
             telemetry_db=telemetry_status,
             indexed_documents=doc_count,
             groq_status=groq_status,
+            build_version="2026-03-01-v7",
         )
     except Exception as exc:
         return HealthResponse(
