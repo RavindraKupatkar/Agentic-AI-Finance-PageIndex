@@ -1,7 +1,7 @@
 export default {
     providers: [
         {
-            domain: process.env.CLERK_ISSUER_URL,
+            domain: "https://driven-lemming-82.clerk.accounts.dev",
             applicationID: "convex",
         },
     ]
