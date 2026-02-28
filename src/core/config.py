@@ -86,6 +86,10 @@ class Settings(BaseSettings):
         le=10000,
         description="Maximum allowed query length in characters.",
     )
+    max_pdf_size_bytes: int = Field(
+        default=100 * 1024 * 1024,  # 100 MB
+        description="Maximum PDF file size in bytes.",
+    )
     max_search_retries: int = Field(
         default=2,
         ge=0,
