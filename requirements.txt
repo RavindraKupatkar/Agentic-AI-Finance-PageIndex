@@ -21,7 +21,7 @@ tiktoken>=0.7.0
 # ── Observability ─────────────────────────────────────────────
 opentelemetry-api>=1.22.0
 opentelemetry-sdk>=1.22.0
-opentelemetry-exporter-otlp>=1.22.0
+# opentelemetry-exporter-otlp — install separately if OTLP tracing is needed
 prometheus-client>=0.19.0
 structlog>=24.1.0
 aiosqlite>=0.20.0

@@ -8,7 +8,6 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
 from ..core.config import settings
 
@@ -31,15 +30,21 @@ def setup_tracing():
     
     provider = TracerProvider(resource=resource)
     
-    # Configure OTLP exporter if endpoint provided
+    # Configure OTLP exporter if endpoint provided (lazy import to avoid grpcio dep)
     if settings.otlp_endpoint:
-        otlp_exporter = OTLPSpanExporter(
-            endpoint=settings.otlp_endpoint,
-            insecure=True
-        )
-        
-        processor = BatchSpanProcessor(otlp_exporter)
-        provider.add_span_processor(processor)
+        try:
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+            otlp_exporter = OTLPSpanExporter(
+                endpoint=settings.otlp_endpoint,
+                insecure=True
+            )
+            processor = BatchSpanProcessor(otlp_exporter)
+            provider.add_span_processor(processor)
+        except ImportError:
+            import logging
+            logging.getLogger(__name__).warning(
+                "opentelemetry-exporter-otlp not installed; tracing export disabled"
+            )
     
     trace.set_tracer_provider(provider)
     
