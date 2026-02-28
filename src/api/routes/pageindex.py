@@ -232,7 +232,7 @@ async def query_documents(
         initial_state = create_initial_query_state(
             question=request.question,
             thread_id=request.thread_id,
-            user_id=request.user_id,
+            user_id=clerk_user_id,
             query_id=query_id,
             scoped_doc_ids=scoped_doc_ids,
         )
