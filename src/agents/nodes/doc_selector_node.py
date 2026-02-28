@@ -68,7 +68,17 @@ async def select_documents(
         
         # Load document metadata from Convex
         clerk_id = state.get("user_id") or "frontend_user"
+        logger.info(
+            "doc_selector.fetching_documents",
+            clerk_id=clerk_id,
+            user_id_from_state=state.get("user_id"),
+        )
         all_docs_raw = convex_service.list_documents(clerk_id)
+        logger.info(
+            "doc_selector.raw_documents_fetched",
+            count=len(all_docs_raw) if all_docs_raw else 0,
+            statuses=[d.get("status") for d in (all_docs_raw or [])],
+        )
         
         all_docs = []
         for d in all_docs_raw:
