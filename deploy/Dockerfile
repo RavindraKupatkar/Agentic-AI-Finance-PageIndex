@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY src/ ./src/
 COPY main.py .
+COPY LangGraph_flow.py .
 
 # Create data directories & non-root user
 RUN mkdir -p /app/data/pdfs /app/data/trees \
