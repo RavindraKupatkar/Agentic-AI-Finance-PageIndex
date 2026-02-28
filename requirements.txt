@@ -26,6 +26,9 @@ prometheus-client>=0.19.0
 structlog>=24.1.0
 aiosqlite>=0.20.0
 
+# ── Convex (cloud database) ────────────────────────────────────
+convex>=0.7.0
+
 # ── Authentication ────────────────────────────────────────────
 PyJWT[crypto]>=2.8.0
 

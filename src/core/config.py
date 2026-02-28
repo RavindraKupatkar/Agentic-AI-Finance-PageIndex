@@ -7,7 +7,7 @@ Centralized configuration for the PageIndex Finance RAG system.
 
 from pathlib import Path
 from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator
+from pydantic import Field
 from typing import Optional
 
 
@@ -115,21 +115,19 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────
     api_host: str = "0.0.0.0"
     api_port: int = Field(default=8000, alias="PORT")
-    allowed_origins: list[str] = Field(
-        default=["http://localhost:3000"],
+    allowed_origins_str: str = Field(
+        default="http://localhost:3000",
+        alias="ALLOWED_ORIGINS",
         description=(
-            "CORS allowed origins. Set via ALLOWED_ORIGINS env var "
-            "as a comma-separated string. Defaults to localhost:3000 for dev."
+            "CORS allowed origins as a comma-separated string. "
+            "Defaults to localhost:3000 for dev."
         ),
     )
 
-    @field_validator("allowed_origins", mode="before")
-    @classmethod
-    def parse_allowed_origins(cls, v: object) -> list[str]:
-        """Parse ALLOWED_ORIGINS from comma-separated string or list."""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v  # type: ignore[return-value]
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Parse ALLOWED_ORIGINS from comma-separated string."""
+        return [o.strip() for o in self.allowed_origins_str.split(",") if o.strip()]
 
     # ─── Computed properties ────────────────────
 
