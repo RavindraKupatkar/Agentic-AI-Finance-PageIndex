@@ -12,9 +12,10 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       - ENV=development
+      - PORT=8080
       - GROQ_API_KEY=${GROQ_API_KEY}
       - CLERK_ISSUER_URL=${CLERK_ISSUER_URL:-}
       - CONVEX_URL=${CONVEX_URL:-}

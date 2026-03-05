@@ -247,7 +247,20 @@ async def generate_tree_index(
             query_id=state.get("query_id"),
         )
 
-        tree = await generator.generate_tree(pdf_path)
+        # Use pre-extracted page_texts from extract_pdf_metadata if available
+        # This avoids re-opening the PDF and re-extracting all text
+        page_texts = state.get("page_texts")
+        if page_texts:
+            tree = await generator.generate_tree_from_texts(
+                page_texts=page_texts,
+                filename=state.get("filename", Path(pdf_path).name),
+                total_pages=state.get("total_pages", len(page_texts)),
+                toc=state.get("existing_toc"),
+                title=state.get("title", ""),
+            )
+        else:
+            # Fallback: extract from PDF directly
+            tree = await generator.generate_tree(pdf_path)
 
         # Ensure the tree uses the Document ID from Convex
         tree.doc_id = state.get("doc_id", tree.doc_id)

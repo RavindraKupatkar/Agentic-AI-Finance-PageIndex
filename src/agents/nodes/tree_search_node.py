@@ -86,29 +86,45 @@ async def tree_search(
         all_relevant_pages: dict[str, list[int]] = {}
         all_reasoning: list[dict] = []
         total_confidence = 0.0
+        docs_searched = 0
 
-        for doc_id in selected_doc_ids:
+        # Build search tasks for parallel execution
+        async def _search_single_doc(doc_id: str) -> tuple[str, SearchResult | None]:
+            """Search a single document, returning (doc_id, result)."""
             tree_data = tree_structures.get(doc_id)
             if not tree_data:
                 logger.warning("tree_search.missing_tree", doc_id=doc_id)
-                continue
+                return doc_id, None
 
-            # Reconstruct DocumentTree from dict
             if isinstance(tree_data, dict):
                 tree = DocumentTree.from_dict(tree_data)
             else:
                 tree = tree_data
 
-            result: SearchResult = await searcher.search(query=query, tree=tree)
+            result = await searcher.search(query=query, tree=tree)
+            return doc_id, result
 
+        # Run all document searches in parallel
+        import asyncio
+        tasks = [_search_single_doc(doc_id) for doc_id in selected_doc_ids]
+        search_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for item in search_results:
+            if isinstance(item, Exception):
+                logger.warning("tree_search.doc_failed", error=str(item))
+                continue
+            doc_id, result = item
+            if result is None:
+                continue
             all_relevant_pages[doc_id] = result.relevant_pages
             all_reasoning.extend([step.to_dict() for step in result.reasoning_trace])
             total_confidence += result.confidence
+            docs_searched += 1
 
-        # Average confidence across documents
+        # Average confidence across searched documents
         search_confidence = (
-            total_confidence / len(selected_doc_ids)
-            if selected_doc_ids
+            total_confidence / docs_searched
+            if docs_searched > 0
             else 0.0
         )
 

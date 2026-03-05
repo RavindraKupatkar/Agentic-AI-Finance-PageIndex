@@ -578,12 +578,16 @@ async def health_check() -> HealthResponse:
         telemetry = await get_telemetry_service()
         telemetry_status = "ok" if telemetry._initialized else "not_initialized"
 
-        # Check indexed documents
+        # Check indexed documents (count tree files on disk)
         try:
-            from ...services.convex_service import convex_service
-            clerk_id = "frontend_user"
-            docs = convex_service.list_documents(clerk_id)
-            doc_count = len([d for d in docs if d.get("status") == "ready"])
+            trees_dir = Path(settings.trees_dir)
+            if not trees_dir.is_absolute():
+                from ...core.config import _PROJECT_ROOT
+                trees_dir = _PROJECT_ROOT / trees_dir
+            if trees_dir.is_dir():
+                doc_count = len(list(trees_dir.glob("*.json")))
+            else:
+                doc_count = 0
         except Exception:
             doc_count = 0
 

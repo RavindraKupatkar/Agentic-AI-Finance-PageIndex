@@ -22,20 +22,21 @@ from ...observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-_DOC_SELECTOR_PROMPT = """You are selecting which documents to search to answer a question.
+_DOC_SELECTOR_PROMPT = """Select which financial documents to search.
 
 Question: {question}
 
-Available documents:
+Documents:
 {doc_list}
 
-Select the documents most likely to contain the answer. Output a JSON array of document IDs:
+Output a JSON array of document IDs to search:
 ["doc_id_1", "doc_id_2"]
 
 Rules:
-1. Select at most {max_docs} documents
-2. If unsure, select all documents
-3. Output ONLY valid JSON, no explanation"""
+1. Max {max_docs} documents — pick the most relevant by title and page count
+2. Prefer annual reports/10-K for financial data questions
+3. If unsure, include all documents
+4. Output ONLY valid JSON"""
 
 async def select_documents(
     state: PageIndexQueryState, config: RunnableConfig
@@ -136,10 +137,11 @@ async def select_documents(
             # Use LLM to select relevant documents
             doc_list_parts = []
             for i, doc in enumerate(available_docs):
-                desc = doc.get("description", "") or doc.get("title", "")
+                title = doc.get("title", "") or doc.get("filename", "")
                 doc_list_parts.append(
-                    f'{i + 1}. [{doc["doc_id"]}] "{doc["filename"]}" '
-                    f'({doc["total_pages"]} pages)\n   Description: {desc}'
+                    f'{i + 1}. ID: {doc["doc_id"]}\n'
+                    f'   Title: "{title}"\n'
+                    f'   File: {doc["filename"]} ({doc["total_pages"]} pages)'
                 )
 
             prompt = _DOC_SELECTOR_PROMPT.format(

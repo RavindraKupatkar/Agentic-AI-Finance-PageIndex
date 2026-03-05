@@ -14,9 +14,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from ..auth import verify_clerk_token
 from ...observability.conversations import get_conversation_service
 from ...observability.logging import get_logger
 
@@ -44,20 +45,29 @@ class AttachDocumentRequest(BaseModel):
 
 
 @router.get("")
-async def list_conversations(limit: int = 50):
+async def list_conversations(
+    limit: int = 50,
+    clerk_user_id: str = Depends(verify_clerk_token),
+):
     service = await get_conversation_service()
     return await service.list_conversations(limit=limit)
 
 
 @router.post("")
-async def create_conversation(request: CreateConversationRequest):
+async def create_conversation(
+    request: CreateConversationRequest,
+    clerk_user_id: str = Depends(verify_clerk_token),
+):
     service = await get_conversation_service()
     conv_id = await service.create_conversation(title=request.title)
     return {"id": conv_id, "title": request.title}
 
 
 @router.get("/{conv_id}")
-async def get_conversation(conv_id: str):
+async def get_conversation(
+    conv_id: str,
+    clerk_user_id: str = Depends(verify_clerk_token),
+):
     service = await get_conversation_service()
     conv = await service.get_conversation(conv_id)
     if not conv:
@@ -66,7 +76,11 @@ async def get_conversation(conv_id: str):
 
 
 @router.post("/{conv_id}/message")
-async def add_message(conv_id: str, request: AddMessageRequest):
+async def add_message(
+    conv_id: str,
+    request: AddMessageRequest,
+    clerk_user_id: str = Depends(verify_clerk_token),
+):
     service = await get_conversation_service()
     msg_id = await service.add_message(
         conv_id=conv_id,
@@ -82,7 +96,11 @@ async def add_message(conv_id: str, request: AddMessageRequest):
 
 
 @router.post("/{conv_id}/document")
-async def attach_document(conv_id: str, request: AttachDocumentRequest):
+async def attach_document(
+    conv_id: str,
+    request: AttachDocumentRequest,
+    clerk_user_id: str = Depends(verify_clerk_token),
+):
     service = await get_conversation_service()
     await service.attach_document(
         conv_id=conv_id,
@@ -94,9 +112,13 @@ async def attach_document(conv_id: str, request: AttachDocumentRequest):
 
 
 @router.delete("/{conv_id}")
-async def delete_conversation(conv_id: str):
+async def delete_conversation(
+    conv_id: str,
+    clerk_user_id: str = Depends(verify_clerk_token),
+):
     service = await get_conversation_service()
     success = await service.delete_conversation(conv_id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to delete conversation")
     return {"status": "deleted"}
+

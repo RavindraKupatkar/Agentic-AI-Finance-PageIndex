@@ -108,10 +108,10 @@ class TreeNode:
         return cls(
             title=data["title"],
             node_id=data["node_id"],
-            start_page=data["start_page"],
-            end_page=data["end_page"],
+            start_page=int(data["start_page"]),
+            end_page=int(data["end_page"]),
             summary=data.get("summary", ""),
-            level=data.get("level", 0),
+            level=int(data.get("level", 0)),
             children=children,
         )
 
@@ -340,83 +340,18 @@ class TreeGenerator:
             page_texts: list[str] = pdf_structure["page_texts"]
             total_pages: int = pdf_structure["total_pages"]
             pdf_title: str = pdf_structure.get("title", "")
-            total_chars = sum(len(t) for t in page_texts)
-            pages_with_text = sum(1 for t in page_texts if t.strip())
-
-            logger.info(
-                "tree_generator.pdf_extracted",
-                doc_id=doc_id,
-                total_pages=total_pages,
-                total_chars=total_chars,
-                pages_with_text=pages_with_text,
-            )
-
-            # ── Zero-text guard: detect image-only or corrupted PDFs ──
-            if total_chars == 0:
-                logger.warning(
-                    "tree_generator.zero_text_extraction",
-                    doc_id=doc_id,
-                    total_pages=total_pages,
-                    reason="No text extracted from any page. PDF may be image-only or have corrupted streams.",
-                )
-            elif pages_with_text < total_pages * 0.1:
-                logger.warning(
-                    "tree_generator.low_text_extraction",
-                    doc_id=doc_id,
-                    total_pages=total_pages,
-                    pages_with_text=pages_with_text,
-                    reason="Very few pages produced text. PDF may be mostly images.",
-                )
-
-            # Step 2: Detect existing TOC
             toc = pdf_structure.get("toc", [])
 
-            # Step 3: Build tree with LLM
-            tree_data = await self._build_tree_with_llm(
+            # Delegate to shared builder
+            return await self._build_tree_from_data(
                 page_texts=page_texts,
                 total_pages=total_pages,
-                toc=toc if toc else None,
-            )
-
-            # Step 4: Parse LLM response into TreeNode objects
-            root_nodes = self._parse_tree_response(tree_data, total_pages)
-
-            # Step 5: Generate detailed summaries for nodes
-            await self._generate_node_summaries(root_nodes, page_texts)
-
-            # Build final DocumentTree
-            doc_title = tree_data.get("title", pdf_title) or filename
-            description = tree_data.get("description", "")
-
-            tree = DocumentTree(
+                toc=toc,
                 doc_id=doc_id,
                 filename=filename,
-                title=doc_title,
-                description=description,
-                total_pages=total_pages,
-                root_nodes=root_nodes,
-                metadata={
-                    "has_toc": len(toc) > 0,
-                    "toc_entries": len(toc),
-                    "generation_model": self._model,
-                    "text_extraction_chars": total_chars,
-                    "pages_with_text": pages_with_text,
-                    "is_image_only": total_chars == 0,
-                },
+                pdf_title=pdf_title,
+                start_time=start_time,
             )
-
-            elapsed_ms = (time.time() - start_time) * 1000
-
-            logger.info(
-                "tree_generator.generate_tree.complete",
-                doc_id=doc_id,
-                total_pages=total_pages,
-                node_count=self._count_nodes(root_nodes),
-                tree_depth=self._calculate_depth(root_nodes),
-                elapsed_ms=round(elapsed_ms, 1),
-            )
-
-            return tree
 
         except Exception as exc:
             elapsed_ms = (time.time() - start_time) * 1000
@@ -438,6 +373,162 @@ class TreeGenerator:
                 )
 
             raise
+
+    async def generate_tree_from_texts(
+        self,
+        page_texts: list[str],
+        filename: str,
+        total_pages: int,
+        toc: list | None = None,
+        title: str = "",
+    ) -> DocumentTree:
+        """
+        Generate a tree index from pre-extracted page texts.
+
+        Skips the PDF extraction step — used when the ingestion pipeline
+        has already extracted page texts in an earlier node.
+
+        Args:
+            page_texts: List of page text strings (1-indexed content).
+            filename: Original PDF filename.
+            total_pages: Total page count.
+            toc: Optional Table of Contents entries.
+            title: Optional document title.
+
+        Returns:
+            DocumentTree with hierarchical structure and page references.
+        """
+        import time
+
+        start_time = time.time()
+        doc_id = self._generate_doc_id(filename)
+
+        logger.info(
+            "tree_generator.generate_tree_from_texts.start",
+            filename=filename,
+            doc_id=doc_id,
+            total_pages=total_pages,
+        )
+
+        try:
+            return await self._build_tree_from_data(
+                page_texts=page_texts,
+                total_pages=total_pages,
+                toc=toc or [],
+                doc_id=doc_id,
+                filename=filename,
+                pdf_title=title,
+                start_time=start_time,
+            )
+        except Exception as exc:
+            elapsed_ms = (time.time() - start_time) * 1000
+            logger.error(
+                "tree_generator.generate_tree_from_texts.failed",
+                doc_id=doc_id,
+                error=str(exc),
+                elapsed_ms=round(elapsed_ms, 1),
+            )
+            if self._telemetry:
+                await self._telemetry.log_error(
+                    error_type=type(exc).__name__,
+                    error_message=str(exc),
+                    query_id=self._query_id,
+                    node_name="tree_generator",
+                    exception=exc,
+                    recovery_action="abort",
+                )
+            raise
+
+    async def _build_tree_from_data(
+        self,
+        page_texts: list[str],
+        total_pages: int,
+        toc: list,
+        doc_id: str,
+        filename: str,
+        pdf_title: str,
+        start_time: float,
+    ) -> DocumentTree:
+        """
+        Shared tree-building logic used by both generate_tree and
+        generate_tree_from_texts.
+        """
+        import time
+
+        total_chars = sum(len(t) for t in page_texts)
+        pages_with_text = sum(1 for t in page_texts if t.strip())
+
+        logger.info(
+            "tree_generator.pdf_extracted",
+            doc_id=doc_id,
+            total_pages=total_pages,
+            total_chars=total_chars,
+            pages_with_text=pages_with_text,
+        )
+
+        # ── Zero-text guard: detect image-only or corrupted PDFs ──
+        if total_chars == 0:
+            logger.warning(
+                "tree_generator.zero_text_extraction",
+                doc_id=doc_id,
+                total_pages=total_pages,
+                reason="No text extracted from any page. PDF may be image-only or have corrupted streams.",
+            )
+        elif pages_with_text < total_pages * 0.1:
+            logger.warning(
+                "tree_generator.low_text_extraction",
+                doc_id=doc_id,
+                total_pages=total_pages,
+                pages_with_text=pages_with_text,
+                reason="Very few pages produced text. PDF may be mostly images.",
+            )
+
+        # Build tree with LLM
+        tree_data = await self._build_tree_with_llm(
+            page_texts=page_texts,
+            total_pages=total_pages,
+            toc=toc if toc else None,
+        )
+
+        # Parse LLM response into TreeNode objects
+        root_nodes = self._parse_tree_response(tree_data, total_pages)
+
+        # Generate detailed summaries for nodes
+        await self._generate_node_summaries(root_nodes, page_texts)
+
+        # Build final DocumentTree
+        doc_title = tree_data.get("title", pdf_title) or filename
+        description = tree_data.get("description", "")
+
+        tree = DocumentTree(
+            doc_id=doc_id,
+            filename=filename,
+            title=doc_title,
+            description=description,
+            total_pages=total_pages,
+            root_nodes=root_nodes,
+            metadata={
+                "has_toc": len(toc) > 0,
+                "toc_entries": len(toc),
+                "generation_model": self._model,
+                "text_extraction_chars": total_chars,
+                "pages_with_text": pages_with_text,
+                "is_image_only": total_chars == 0,
+            },
+        )
+
+        elapsed_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            "tree_generator.generate_tree.complete",
+            doc_id=doc_id,
+            total_pages=total_pages,
+            node_count=self._count_nodes(root_nodes),
+            tree_depth=self._calculate_depth(root_nodes),
+            elapsed_ms=round(elapsed_ms, 1),
+        )
+
+        return tree
 
     # ─── PDF Extraction (synchronous, run in thread) ───
 
@@ -887,8 +978,8 @@ class TreeGenerator:
         return TreeNode(
             title=section.get("title", f"Section {parent_idx + 1}"),
             node_id=node_id,
-            start_page=section.get("start_page", 1),
-            end_page=section.get("end_page", 1),
+            start_page=int(section.get("start_page", 1)),
+            end_page=int(section.get("end_page", 1)),
             summary=section.get("summary", ""),
             children=children,
             level=level,

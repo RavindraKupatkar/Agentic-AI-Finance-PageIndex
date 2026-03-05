@@ -115,33 +115,36 @@ class SearchResult:
 # Prompts
 # ──────────────────────────────────────────────────────────────
 
-_EVALUATE_NODES_PROMPT = """You are a document navigation expert. Given a user's question, evaluate which document sections are most likely to contain the answer.
+_EVALUATE_NODES_PROMPT = """You are navigating a financial document (annual report, 10-K, earnings report, or similar).
 
 Question: {question}
 
 {context_section}
 
-Available sections at this level:
+Document sections at this level:
 {node_list}
 
-Evaluate EACH section and decide if it likely contains information relevant to the question.
+Evaluate which sections likely contain the answer. Common financial document patterns:
+- "Financial Statements" → Balance Sheet, Income Statement, Cash Flow Statement
+- "Notes to Financial Statements" → Detailed breakdowns, accounting policies, debt schedules
+- "Management Discussion & Analysis (MD&A)" → Performance commentary, trends, outlook
+- "Risk Factors" → Business risks, market risks, regulatory risks
 
-Output a JSON array with one object per section, in the SAME ORDER as listed above:
+Output a JSON array, one object per section:
 [
     {{
         "node_id": "section_id",
         "selected": true,
-        "reasoning": "Brief explanation of why this section is or isn't relevant",
-        "confidence": 0.0
+        "reasoning": "Why this section is relevant",
+        "confidence": 0.85
     }}
 ]
 
 Rules:
-1. Select at most {max_selections} sections (prioritize the most relevant)
-2. A section is relevant if its summary suggests it contains information needed to answer the question
-3. If unsure, include the section (better to retrieve too broadly than miss relevant content)
-4. confidence is 0.0-1.0 indicating how sure you are this section is relevant
-5. Output ONLY valid JSON, no markdown fences"""
+1. Select at most {max_selections} sections
+2. If a section's summary mentions data relevant to the question, select it
+3. When unsure, include the section (broader retrieval is better than missing content)
+4. Output ONLY valid JSON, no markdown fences"""
 
 
 # ──────────────────────────────────────────────────────────────
@@ -227,7 +230,7 @@ class TreeSearcher:
             ValueError: If the tree has no root nodes.
         """
         start_time = time.time()
-        effective_depth = max_depth or self._max_depth
+        effective_depth = int(max_depth or self._max_depth)
 
         if not tree.root_nodes:
             raise ValueError(

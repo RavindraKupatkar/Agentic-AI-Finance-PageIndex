@@ -20,17 +20,17 @@ from ...observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-ROUTER_PROMPT = """Analyze the following query and classify its complexity.
+ROUTER_PROMPT = """Classify this financial document query:
 
 Query: {question}
 
-Classification criteria:
-- SIMPLE: Direct factual questions, single concept lookup (e.g., "What is X?")
-- STANDARD: Questions requiring context synthesis from multiple sections
-- COMPLEX: Multi-part questions or questions requiring analysis
-- MULTI_HOP: Questions requiring reasoning across multiple documents or steps
+Rules:
+- SIMPLE: Single fact lookup ("What is the revenue?", "When was X filed?")
+- STANDARD: Requires reading 1-2 sections ("Summarize the balance sheet")
+- COMPLEX: Multi-part analysis or comparison across sections
+- MULTI_HOP: Requires cross-document reasoning or multi-step calculation
 
-Respond with ONLY one word: SIMPLE, STANDARD, COMPLEX, or MULTI_HOP"""
+Respond with ONLY: SIMPLE, STANDARD, COMPLEX, or MULTI_HOP"""
 
 async def classify_query(
     state: PageIndexQueryState, config: RunnableConfig
@@ -120,35 +120,47 @@ async def classify_query(
         return {"query_type": "standard", "complexity_score": 0.5}
 
 def _compute_complexity_heuristics(question: str) -> float:
-    """Compute complexity score using text heuristics."""
-    score = 0.3
+    """Compute complexity score using text heuristics with finance awareness."""
+    score = 0.2  # Lower base score reduces borderline LLM calls
+    q = question.lower()
 
     if len(question) > 200:
         score += 0.2
     elif len(question) > 100:
         score += 0.1
 
-    multi_part_words = ["compare", "contrast", "versus", "difference between", "all attached files"]
+    # Multi-document / comparison → immediate complex
+    multi_part_words = ["compare", "contrast", "versus", "difference between", "all attached files", "across documents"]
     for word in multi_part_words:
-        if word in question.lower():
-            score += 0.8  # Immediate complex trigger
+        if word in q:
+            score += 0.8
 
-    multi_part_and = ["and", "also", "additionally"]
+    # Conjunctions suggesting multi-part queries
+    multi_part_and = ["and also", "additionally", "furthermore", "as well as"]
     for word in multi_part_and:
-        if word in question.lower():
+        if word in q:
             score += 0.15
 
-    analysis_words = ["analyze", "explain why", "how does", "what caused", "impact of"]
+    # Analysis keywords
+    analysis_words = ["analyze", "explain why", "how does", "what caused", "impact of", "trend", "year-over-year"]
     for phrase in analysis_words:
-        if phrase in question.lower():
+        if phrase in q:
             score += 0.2
 
-    calc_words = ["calculate", "compute", "total", "sum", "average", "percentage"]
+    # Calculation keywords
+    calc_words = ["calculate", "compute", "total", "sum", "average", "percentage", "ratio", "margin"]
     for word in calc_words:
-        if word in question.lower():
+        if word in q:
             score += 0.15
 
-    return min(score, 1.0)
+    # Simple finance lookups → bias toward SIMPLE (reduce score)
+    simple_finance = ["what is the", "what was the", "how much", "when was", "where is", "total revenue",
+                      "total debt", "net income", "ebitda", "eps", "operating income", "balance sheet"]
+    simple_matches = sum(1 for phrase in simple_finance if phrase in q)
+    if simple_matches >= 1 and score < 0.5:
+        score -= 0.1  # Push simple lookups below the LLM threshold
+
+    return max(0.0, min(score, 1.0))
 
 def _parse_classification(
     response: str,

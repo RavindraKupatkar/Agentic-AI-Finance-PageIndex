@@ -19,11 +19,17 @@ from ...observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-_PLANNER_PROMPT = """You are a financial analysis expert. Break this complex question into simpler sub-questions that can each be answered by searching a document tree index.
+_PLANNER_PROMPT = """Break this complex financial question into 2-3 focused sub-questions.
 
 Original Question: {question}
 
-Create a plan with 2-4 steps. Each step should be a focused sub-question.
+Each sub-question should target a different section of the document.
+
+Example:
+  Question: "Compare revenue growth to debt levels over the past 3 years"
+  Plan:
+  - Step 1: "What was the total revenue for each of the past 3 fiscal years?" (targets Income Statement)
+  - Step 2: "What were the total debt and long-term debt figures for the past 3 years?" (targets Balance Sheet / Notes)
 
 Output as JSON:
 {{
@@ -31,13 +37,16 @@ Output as JSON:
         {{
             "step_id": 1,
             "action": "retrieve",
-            "query": "Sub-question to search for",
-            "rationale": "Why this step is needed"
+            "query": "Focused sub-question",
+            "rationale": "Which document section this targets"
         }}
     ]
 }}
 
-Only output JSON."""
+Rules:
+- Maximum 3 steps (fewer is better for speed)
+- Each sub-question should be self-contained and answerable from 1-2 document sections
+- Only output JSON"""
 
 async def create_plan(
     state: PageIndexQueryState, config: RunnableConfig

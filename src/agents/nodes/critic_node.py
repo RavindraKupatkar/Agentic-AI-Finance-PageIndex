@@ -21,19 +21,12 @@ from ...observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-_CRITIC_PROMPT = """Evaluate whether the retrieved document pages can answer this question.
+_CRITIC_PROMPT = """Can the retrieved content answer this question?
 
 Question: {question}
 
-Retrieved Page Content:
+Retrieved Content (truncated):
 {context}
-
-Evaluate on a scale of 0-1:
-1. RELEVANCE: Are the pages relevant to the question?
-2. COMPLETENESS: Do they contain enough information to fully answer?
-3. CONFIDENCE: How confident are you that a good answer can be generated?
-
-If scores are low (< 0.5), suggest a refined search query that might find better content.
 
 Output as JSON:
 {{
@@ -41,9 +34,13 @@ Output as JSON:
     "completeness_score": 0.0-1.0,
     "confidence_score": 0.0-1.0,
     "needs_retry": true/false,
-    "feedback": "explanation",
-    "suggested_query": "refined query if retry needed"
+    "feedback": "one sentence explanation"
 }}
+
+Decision guide:
+- confidence ≥ 0.5: needs_retry = false (content is sufficient)
+- confidence < 0.5: needs_retry = true (content is insufficient or off-topic)
+- If content mentions relevant financial data (numbers, tables, dates), confidence should be high
 
 Only output JSON."""
 
@@ -109,7 +106,7 @@ async def evaluate_retrieval(
         llm_start = time.time()
         response = await deps.llm.agenerate(
             _CRITIC_PROMPT.format(question=question, context=eval_context),
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             max_tokens=300,
             temperature=0.1,
         )
@@ -118,7 +115,7 @@ async def evaluate_retrieval(
         await deps.telemetry.log_llm_call(
             query_id=state.get("query_id", ""),
             node_name="critic",
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             latency_ms=round(llm_latency, 1),
             temperature=0.1,
         )
