@@ -137,6 +137,13 @@ async def verify_clerk_token(
         # Get the signing key from JWKS endpoint
         signing_key = jwks.get_signing_key_from_jwt(token)
 
+        # Get the issuer from environment
+        issuer_url = os.environ.get("CLERK_ISSUER_URL")
+        valid_issuers = []
+        if issuer_url:
+            base_url = issuer_url.rstrip('/')
+            valid_issuers = [base_url, base_url + '/']
+        
         # Decode and verify the JWT
         payload = jwt.decode(
             token,
@@ -147,7 +154,7 @@ async def verify_clerk_token(
                 "verify_aud": False,  # Clerk doesn't always set audience
                 "verify_iss": True,
             },
-            issuer=os.environ.get("CLERK_ISSUER_URL"),
+            issuer=valid_issuers if valid_issuers else None,
         )
 
         # Extract user ID — Clerk puts it in the "sub" claim
