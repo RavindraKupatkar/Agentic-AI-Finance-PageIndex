@@ -1,6 +1,10 @@
 # =====================================================
 # PageIndex Finance RAG — Production Dockerfile (slim)
 # =====================================================
+# Canonical copy lives in deploy/Dockerfile — keep in sync.
+# This root-level copy exists so `gcloud builds submit --tag`
+# finds it without needing -f deploy/Dockerfile.
+# =====================================================
 FROM python:3.12-slim
 
 WORKDIR /app

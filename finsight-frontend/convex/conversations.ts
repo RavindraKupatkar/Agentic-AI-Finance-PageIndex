@@ -13,10 +13,17 @@ export const createConversation = mutation({
             .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
             .first();
 
-        if (!user) throw new Error("User not found");
+        if (!user) {
+            const userId = await ctx.db.insert("users", {
+                clerkId: args.clerkId,
+                email: "unknown@example.com",
+                createdAt: Date.now(),
+            });
+            user = await ctx.db.get(userId);
+        }
 
         const conversationId = await ctx.db.insert("conversations", {
-            userId: user._id,
+            userId: user!._id,
             title: args.title,
             createdAt: Date.now(),
             updatedAt: Date.now(),

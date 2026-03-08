@@ -113,15 +113,17 @@ class TelemetryService:
         completion_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
         duration_ms: Optional[float] = None,
+        latency_ms: Optional[float] = None,
         error: Optional[str] = None,
         temperature: float = 0.0,
     ):
         try:
+            effective_duration = duration_ms or latency_ms
             convex_service.log_event(
                 event_type="llm_call",
                 query_id=query_id or "unknown",
                 node_name=node_name or "unknown",
-                duration_ms=duration_ms,
+                duration_ms=effective_duration,
                 details={
                     "model": model,
                     "tokens": total_tokens,
@@ -150,6 +152,24 @@ class TelemetryService:
                     "message": error_message,
                     "recovery": recovery_action
                 }
+            )
+        except Exception:
+            pass
+
+    async def log_state_snapshot(
+        self,
+        session_id: str,
+        query_id: str,
+        node_name: str,
+        data: Optional[dict] = None,
+    ):
+        """Log a state snapshot after a node executes (used by query graph logging wrapper)."""
+        try:
+            convex_service.log_event(
+                event_type="state_snapshot",
+                query_id=query_id,
+                node_name=node_name,
+                details={"session_id": session_id},
             )
         except Exception:
             pass

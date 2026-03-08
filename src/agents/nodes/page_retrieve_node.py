@@ -54,6 +54,7 @@ async def retrieve_pages(
     try:
         from ...services.convex_service import convex_service
         import httpx
+        from httpx import AsyncClient as HttpxAsyncClient
         from pathlib import Path
 
         cache_dir = Path("data/pdfs_cache")
@@ -84,13 +85,10 @@ async def retrieve_pages(
                 try:
                     dl_url = convex_service.get_download_url(storage_id)
                     if dl_url:
-                        # Blocking IO since we're in async, but httpx allows sync calls here
-                        # Actually it's better to use httpx.AsyncClient or run in thread
-                        # For simplicity, we run in an async thread implicitly or block
-                        # We will use httpx blocking since it's just a quick cache fill
-                        resp = httpx.get(dl_url)
-                        resp.raise_for_status()
-                        pdf_path.write_bytes(resp.content)
+                        async with HttpxAsyncClient() as http_client:
+                            resp = await http_client.get(dl_url)
+                            resp.raise_for_status()
+                            pdf_path.write_bytes(resp.content)
                     else:
                         logger.error("page_retrieve.no_url_returned", doc_id=doc_id)
                         continue

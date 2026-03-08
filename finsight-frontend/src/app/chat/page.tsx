@@ -29,7 +29,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_BASE = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/v1`;
 
 /* ═══════════════════════════════════════════════════════════
    MAGNETIC 3D WRAPPER
@@ -317,7 +317,7 @@ export default function ChatPage() {
                     err instanceof Error ? err.message : "An unexpected error occurred";
                 const errorMsg: ChatMessage = {
                     role: "assistant",
-                    content: `Error: ${errorMessage}. Please check that the backend server is running on port 8000.`,
+                    content: `Error: ${errorMessage}. Please check that the backend server is running on port 8080.`,
                 };
                 setLocalMessages((prev) => [...prev, errorMsg]);
             } finally {

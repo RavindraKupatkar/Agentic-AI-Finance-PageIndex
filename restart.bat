@@ -11,14 +11,14 @@ echo.
 
 REM ─── Step 1: Kill existing processes ───────────────────────
 
-echo [1/4] Terminating Backend Server on port 8000...
+echo [1/4] Terminating Backend Server on port 8080...
 set "KILLED_BACKEND=0"
-FOR /F "tokens=5" %%a IN ('netstat -aon ^| find ":8000" ^| find "LISTENING"') DO (
+FOR /F "tokens=5" %%a IN ('netstat -aon ^| find ":8080" ^| find "LISTENING"') DO (
     taskkill /F /PID %%a >nul 2>&1
     echo       Killed PID: %%a
     set "KILLED_BACKEND=1"
 )
-IF "%KILLED_BACKEND%"=="0" echo       No backend process found on port 8000.
+IF "%KILLED_BACKEND%"=="0" echo       No backend process found on port 8080.
 
 echo [2/4] Terminating Frontend Server on port 3000...
 set "KILLED_FRONTEND=0"
@@ -36,7 +36,7 @@ timeout /t 2 /nobreak >nul
 REM ─── Step 2: Start Backend ─────────────────────────────────
 
 echo.
-echo [3/4] Starting Backend (FastAPI on port 8000)...
+echo [3/4] Starting Backend (FastAPI on port 8080)...
 
 REM Activate venv and run the server in a new window
 start "FinSight Backend" cmd /k "cd /d %~dp0 && call venv\Scripts\activate.bat && python main.py server"
@@ -58,9 +58,9 @@ echo  ============================================
 echo   All servers launched!
 echo  ============================================
 echo.
-echo   Backend:   http://localhost:8000
+echo   Backend:   http://localhost:8080
 echo   Frontend:  http://localhost:3000
-echo   API Docs:  http://localhost:8000/docs
+echo   API Docs:  http://localhost:8080/docs
 echo.
 echo   (This window can be closed safely)
 echo.

@@ -21,7 +21,7 @@ from ...observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-_GENERATOR_PROMPT = """You are a helpful finance assistant. Answer the question using ONLY the provided document pages.
+_GENERATOR_PROMPT = """You are a senior financial analyst answering questions from financial documents.
 
 Document Pages:
 {context}
@@ -29,23 +29,26 @@ Document Pages:
 Question: {question}
 
 Instructions:
-1. Answer based ONLY on the provided page content
-2. If the content doesn't contain enough information, say so
-3. Be concise but comprehensive
-4. Include specific numbers, dates, or facts when available
-5. Do NOT make up information not in the pages
-6. Cite your sources using page numbers, e.g., (Source: filename, p.XX)
+1. First identify the key data points in the pages that address the question
+2. Synthesize a clear, precise answer using ONLY information from the pages
+3. Include specific numbers, dates, percentages, and financial metrics when available
+4. Cite sources as [Source: filename, Page X] at the end of each relevant statement
+5. If the pages don't contain enough information, clearly state what's missing
+6. Never fabricate data — if a number isn't in the pages, don't invent it
+7. For financial data, preserve the exact figures and units from the source
 
 Answer:"""
 
-_FAST_GENERATOR_PROMPT = """Answer this finance question using the document content below.
+_FAST_GENERATOR_PROMPT = """You are a financial analyst. Answer this question using the document content.
 
 Content:
 {context}
 
 Question: {question}
 
-Answer concisely with page citations:"""
+Provide a concise but accurate answer. Include key figures and cite page numbers as [Page X]. Never invent data not in the content.
+
+Answer:"""
 
 async def generate_response(
     state: PageIndexQueryState, config: RunnableConfig
